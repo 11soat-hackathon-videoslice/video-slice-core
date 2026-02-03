@@ -1,5 +1,13 @@
-from .event_dto import EventDTO
 from .vdsc_metadata_dto import (LogEntryDTO, VdscMetadataDTO)
+from .vdsc_config_dto import (QualityDTO, ScheduleRulesDTO, VdscConfigDTO, S3ConfigDTO, VdscSettingsDTO)
 
-__all__ = ['EventDTO', 'LogEntryDTO','VdscMetadataDTO']
+__all__ = [
+    'LogEntryDTO',
+    'VdscMetadataDTO',
+    'QualityDTO',
+    'ScheduleRulesDTO',
+    'VdscConfigDTO',
+    'S3ConfigDTO',
+    'VdscSettingsDTO'
+           ]
 

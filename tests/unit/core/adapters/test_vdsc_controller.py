@@ -1,8 +1,9 @@
 """Testes unitários para VdscController"""
 import pytest
-from unittest.mock import Mock, patch
-from core.adapters.vdsc_controller import (VdscController)
+from unittest.mock import Mock, MagicMock, patch
+from core.adapters.vdsc_controller import VdscController
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.dtos.vdsc_config_dto import VdscConfigDTO
 
 
 @pytest.mark.unit
@@ -48,20 +49,20 @@ class TestVdscController:
     @pytest.fixture
     def mock_config(self):
         """Fixture com configuração mock"""
-        return {
-            'vdsc': {
-                'png_compression_level': 9,
-                'zip_compression_level': 5,
-                'quality': {
-                    'high': 720
-                }
-            },
-            's3_bucket': {
-                'dir_uploads': 'uploads/',
-                'dir_processing': 'processing/',
-                'dir_finished': 'finished/'
+        config = MagicMock(spec=VdscConfigDTO)
+        config.vdsc = {
+            'png_compression_level': 9,
+            'zip_compression_level': 5,
+            'quality': {
+                'high': 720
             }
         }
+        config.s3_bucket = {
+            'dir_uploads': 'uploads/',
+            'dir_processing': 'processing/',
+            'dir_finished': 'finished/'
+        }
+        return config
 
     def test_init(self, controller, mock_dataproxy, mock_handler):
         """Testa inicialização do controlador"""

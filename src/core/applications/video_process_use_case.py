@@ -8,6 +8,7 @@ import cv2
 from pathlib import Path
 from ..interfaces.vdsc_gateway_interface import VdscGatewayInferface
 from ..dtos.vdsc_metadata_dto import VdscMetadataDTO
+from ..dtos.vdsc_config_dto import VdscConfigDTO
 from ..domain.vdsc_metadata import VdscMetadata, LogEntry
 from ..enums.vdsc_status_enum import VdscStatusEnum
 from ..exceptions.vdsc_exceptions import VdscException
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class VdscProcessUseCase:
 
-    def execute(self, gateway: VdscGatewayInferface, event: VdscMetadataDTO, config: dict, handler: VdscExceptionHandlerInterface):
+    def execute(self, gateway: VdscGatewayInferface, event: VdscMetadataDTO, config: VdscConfigDTO, handler: VdscExceptionHandlerInterface):
         """Executa o processamento de vídeo com tratamento de exceções via handler injetado"""
         logger.info(f"Iniciando o caso de uso de processamento de vídeo para o vídeo ID: {event.video_id}")
 
@@ -90,7 +91,8 @@ class VdscProcessUseCase:
             raise VdscException(message, "ERROR", vdsc_metadata_error.to_dict())
 
     def _compress_images_to_zip(self, output_directory: str, zip_directory: str, gateway: VdscGatewayInferface,
-                                config: dict) -> None:
+                                config: VdscConfigDTO) -> None:
+        """Compacta imagens do diretório em arquivo ZIP"""
         #Cria lista com nome e dados dos arquivos
         file_info_list = self._get_file_info_list(output_directory, gateway)
 
@@ -101,13 +103,14 @@ class VdscProcessUseCase:
         gateway.save_file(zip_directory, buffer_zip.read())
 
     def _create_temporary_file(self, video_data, file_extension) -> str:
+        """Cria arquivo temporário com os dados do vídeo"""
         with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as temp_file:
             temp_file.write(video_data)
             temp_file_path = temp_file.name
         return temp_file_path
 
     def _create_interval_list(self, vdsc_metadata, time_unit_multiplier ):
-
+        """Cria lista de intervalos de tempo para extração de frames"""
         start_time = int(vdsc_metadata.start_time * time_unit_multiplier)
         logger.info(f"start_time: {start_time}")
         end_time = int(vdsc_metadata.end_time * time_unit_multiplier)
@@ -131,6 +134,7 @@ class VdscProcessUseCase:
         return buffer_zip
 
     def _encode_frame_to_png(self, frame, png_compression: int):
+        """Codifica frame para formato PNG com nível de compressão especificado"""
         return cv2.imencode('.png', frame, [cv2.IMWRITE_PNG_COMPRESSION, png_compression])
 
     def _frame_resize(self, frame, target_width: int, target_height: int):
@@ -148,6 +152,7 @@ class VdscProcessUseCase:
         return file_info_list
 
     def _get_frame_size(self, frame, target_height: int):
+        """Obtém o tamanho ajustado do frame mantendo proporção"""
         original_h, original_w = frame.shape[:2]
         if original_h <= target_height:
             return frame
@@ -156,19 +161,21 @@ class VdscProcessUseCase:
         return target_height, target_width
 
     def _get_multiplier_time_unit(self, time_unit: str) -> int:
+        """Retorna multiplicador para conversão de unidade de tempo"""
         return 1000 if time_unit == 's' else 1
 
-    def _get_path_file(self, path_type, video_id, extension_file, config)-> str:
+    def _get_path_file(self, path_type, video_id, extension_file, config: VdscConfigDTO)-> str:
         """Retorna o caminho completo do arquivo"""
         dir_key = "dir_" + path_type
         return f"{config.s3_bucket[dir_key]}{video_id}.{extension_file}"
 
-    def _get_path_directory(self, path_type, video_id, config) -> str:
+    def _get_path_directory(self, path_type, video_id, config: VdscConfigDTO) -> str:
         """Retorna o caminho completo do diretório"""
         dir_key = "dir_" + path_type
         return f"{config.s3_bucket[dir_key]}{video_id}/"
 
     def _get_recurrent_time_intervals(self, start_time: int, end_time: int, interval: int):
+        """Gera lista de intervalos de tempo recorrentes"""
         logger.info("Gerando intervalos de tempo recorrentes")
         current_time = start_time
         time_interval_list = []
@@ -184,6 +191,7 @@ class VdscProcessUseCase:
         return [int(time) * int(multiplier) for time in time_intervals]
 
     def _get_frame_widths(self, frame, target_height: int):
+        """Calcula largura do frame mantendo proporção com altura alvo"""
         original_height, original_width = frame.shape[:2]
         ratio = target_height / float(original_height)
         target_width = int(original_width * ratio)
@@ -195,7 +203,7 @@ class VdscProcessUseCase:
         vdsc_metadata.logs.append(log)
         return vdsc_metadata
 
-    def _process_video_frames(self, video_id, vdsc_metadata, video_data, video_output_directory, gateway, config):
+    def _process_video_frames(self, video_id, vdsc_metadata, video_data, video_output_directory, gateway, config: VdscConfigDTO):
         """Processa os frames do vídeo e salva as imagens"""
         time_unit_multiplier = self._get_multiplier_time_unit(vdsc_metadata.unit_time)
         logger.info(f"time_unit_multiplier: {time_unit_multiplier}")
@@ -245,7 +253,8 @@ class VdscProcessUseCase:
             logger.error(f"Erro ao processar frames do vídeo ID {video_id}: {str(e)}", exc_info=e)
             raise
 
-    def _set_exception_status(self, gateway: VdscGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, config: dict):
+    def _set_exception_status(self, gateway: VdscGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, config: VdscConfigDTO):
+        """Define o status de exceção e retorna metadados e mensagem"""
         retries = vdsc_metadata.retries
         max_retries = vdsc_metadata.max_retry
 

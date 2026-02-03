@@ -5,6 +5,7 @@ import zipfile
 from unittest.mock import Mock, MagicMock, patch
 from core.applications.video_process_use_case import VdscProcessUseCase
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.dtos.vdsc_config_dto import VdscConfigDTO
 from core.enums.vdsc_status_enum import VdscStatusEnum
 from core.exceptions.vdsc_exceptions import VdscException
 
@@ -39,7 +40,7 @@ class TestVdscProcessUseCase:
     @pytest.fixture
     def mock_config(self):
         """Fixture da configuração"""
-        config = Mock()
+        config = MagicMock(spec=VdscConfigDTO)
         config.s3_bucket = {
             "dir_uploads": "uploads/",
             "dir_processing": "processing/",
