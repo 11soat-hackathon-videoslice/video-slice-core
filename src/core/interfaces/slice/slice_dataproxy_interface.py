@@ -1,8 +1,8 @@
 import datetime
 from abc import ABC, abstractmethod
-from ..dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 
-class VdscDataProxyInterface(ABC):
+class SliceDataProxyInterface(ABC):
 
     @abstractmethod
     def create_directory(self, directory_path: str) -> None:

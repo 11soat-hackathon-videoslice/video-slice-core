@@ -1,8 +1,8 @@
 import datetime
 from abc import ABC, abstractmethod
-from ..domain.vdsc_metadata import VdscMetadata
+from core.domain.vdsc_metadata import VdscMetadata
 
-class VdscGatewayInferface(ABC):
+class SliceGatewayInferface(ABC):
 
     @abstractmethod
     def create_directory(self, directory_path: str) -> None:

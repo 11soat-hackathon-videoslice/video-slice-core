@@ -1,13 +1,13 @@
 """Testes unitários para VdscController"""
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from core.adapters.vdsc_controller import VdscController
+from core.adapters.slice.slice_controller import SliceController
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 from core.dtos.vdsc_config_dto import VdscConfigDTO
 
 
 @pytest.mark.unit
-class TestVdscController:
+class TestSliceController:
     """Testes para o controlador"""
 
     @pytest.fixture
@@ -23,7 +23,7 @@ class TestVdscController:
     @pytest.fixture
     def controller(self, mock_dataproxy, mock_handler):
         """Fixture para criar instância do controlador"""
-        return VdscController(dataproxy=mock_dataproxy, handler=mock_handler)
+        return SliceController(dataproxy=mock_dataproxy, handler=mock_handler)
 
     @pytest.fixture
     def valid_event_dto(self):
@@ -69,8 +69,8 @@ class TestVdscController:
         assert controller.data_proxy == mock_dataproxy
         assert controller.handler == mock_handler
 
-    @patch('core.adapters.vdsc_controller.VdscGateway')
-    @patch('core.adapters.vdsc_controller.VdscProcessUseCase')
+    @patch('core.adapters.slice.slice_controller.SliceGateway')
+    @patch('core.adapters.slice.slice_controller.SliceProcessUseCase')
     def test_video_slice_processing(self, mock_use_case_class, mock_gateway_class,
                                     controller, valid_event_dto, mock_config):
         """Testa processamento de slice de vídeo"""
@@ -89,8 +89,8 @@ class TestVdscController:
             controller.handler
         )
 
-    @patch('core.adapters.vdsc_controller.VdscGateway')
-    @patch('core.adapters.vdsc_controller.VdscProcessUseCase')
+    @patch('core.adapters.slice.slice_controller.SliceGateway')
+    @patch('core.adapters.slice.slice_controller.SliceProcessUseCase')
     def test_video_slice_processing_with_error(self, mock_use_case_class, mock_gateway_class,
                                                controller, valid_event_dto, mock_config):
         """Testa processamento com erro"""

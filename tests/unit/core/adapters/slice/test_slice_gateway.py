@@ -1,13 +1,13 @@
 """Testes unitários para VdscGateway"""
 import pytest
 from unittest.mock import Mock
-from core.adapters.vdsc_gateway import VdscGateway
+from core.adapters.slice.slice_gateway import SliceGateway
 from core.domain.vdsc_metadata import VdscMetadata
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 
 
 @pytest.mark.unit
-class TestVdscGateway:
+class TestSliceGateway:
     """Testes para o Gateway"""
 
     @pytest.fixture
@@ -18,7 +18,7 @@ class TestVdscGateway:
     @pytest.fixture
     def gateway(self, mock_dataproxy):
         """Fixture para criar instância do Gateway"""
-        return VdscGateway(dataproxy=mock_dataproxy)
+        return SliceGateway(dataproxy=mock_dataproxy)
 
     @pytest.fixture
     def valid_dto(self):

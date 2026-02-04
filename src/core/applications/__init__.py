@@ -1,4 +1,5 @@
-from .video_process_use_case import VdscProcessUseCase
+from .slice_process_use_case import SliceProcessUseCase
+from .generate_pressigned_url_use_case import GeneratePresignedURLUseCase
 
-__all__ = ['VdscProcessUseCase']
+__all__ = ['SliceProcessUseCase', 'GeneratePresignedURLUseCase']
 

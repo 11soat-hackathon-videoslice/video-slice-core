@@ -1,13 +1,13 @@
 import datetime
 
-from ..interfaces.vdsc_gateway_interface import VdscGatewayInferface
-from ..interfaces.vdsc_dataproxy_interface import VdscDataProxyInterface
-from ..dtos.vdsc_metadata_dto import VdscMetadataDTO
-from ..domain.vdsc_metadata import VdscMetadata
+from core.interfaces import SliceGatewayInferface
+from core.interfaces import SliceDataProxyInterface
+from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.domain.vdsc_metadata import VdscMetadata
 
-class VdscGateway(VdscGatewayInferface):
+class SliceGateway(SliceGatewayInferface):
 
-    def __init__(self, dataproxy: VdscDataProxyInterface):
+    def __init__(self, dataproxy: SliceDataProxyInterface):
         self.dataproxy = dataproxy
 
     def create_directory(self, directory_path: str) -> None:
