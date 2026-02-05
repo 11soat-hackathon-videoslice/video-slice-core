@@ -2,7 +2,6 @@
 import pytest
 from core.adapters.url.url_presenter import UrlPresenter
 from core.domain.url import Url
-from core.dtos.url_dto import UrlResponseDto
 
 
 @pytest.mark.unit
@@ -26,22 +25,25 @@ class TestUrlPresenter:
             file_name="test_video.mp4",
             action="upload",
             method="POST",
-            url_endpoint="https://s3.amazonaws.com/presigned-url"
+            url_endpoint="https://s3.amazonaws.com/presigned-url",
+            fields={"expireIn": 900, "s3Key": "uploads/test_video.mp4"}
         )
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert isinstance(result, UrlResponseDto)
-        assert result.url_endpoint == "https://s3.amazonaws.com/presigned-url"
-        assert result.file_name == "test_video.mp4"
-        assert result.action == "upload"
-        assert result.method == "POST"
+        assert isinstance(result, dict)
+        assert result['url'] == "https://s3.amazonaws.com/presigned-url"
+        assert result['FileName'] == "test_video.mp4"
+        assert result['action'] == "upload"
+        assert result['method'] == "POST"
+        assert result['expiresIn'] == 900
+        assert result['s3Key'] == "uploads/test_video.mp4"
 
     def test_return_generate_presigned_url_with_fields(self, presenter):
         """Testa retorno de URL com fields"""
         fields = {
-            "key": "uploads/test_video.mp4",
-            "bucket": "my-bucket"
+            "expireIn": 3600,
+            "s3Key": "uploads/test_video.mp4"
         }
 
         url = Url(
@@ -54,7 +56,8 @@ class TestUrlPresenter:
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert result.fields == fields
+        assert result['expiresIn'] == 3600
+        assert result['s3Key'] == "uploads/test_video.mp4"
 
     def test_return_generate_presigned_url_without_fields(self, presenter):
         """Testa retorno de URL sem fields"""
@@ -62,19 +65,21 @@ class TestUrlPresenter:
             file_name="video.mp4",
             action="download",
             method="GET",
-            url_endpoint="https://s3.amazonaws.com/url"
+            url_endpoint="https://s3.amazonaws.com/url",
+            fields={"expireIn": 180, "s3Key": "finished/video.mp4"}
         )
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert result.fields is None
+        assert isinstance(result, dict)
+        assert result['expiresIn'] == 180
+        assert result['s3Key'] == "finished/video.mp4"
 
     def test_return_generate_presigned_url_preserves_all_data(self, presenter):
         """Testa que todos os dados são preservados"""
         fields = {
-            "key": "uploads/video.mp4",
-            "bucket": "vdsc-prd-s3-bucket",
-            "acl": "private"
+            "expireIn": 3600,
+            "s3Key": "uploads/video.mp4"
         }
 
         url = Url(
@@ -87,11 +92,12 @@ class TestUrlPresenter:
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert result.url_endpoint == url.url_endpoint
-        assert result.file_name == url.file_name
-        assert result.action == url.action
-        assert result.method == url.method
-        assert result.fields == url.fields
+        assert result['url'] == url.url_endpoint
+        assert result['FileName'] == url.file_name
+        assert result['action'] == url.action
+        assert result['method'] == url.method
+        assert result['expiresIn'] == fields['expireIn']
+        assert result['s3Key'] == fields['s3Key']
 
     def test_return_generate_presigned_url_with_different_operations(self, presenter):
         """Testa retorno com diferentes operações"""
@@ -102,12 +108,13 @@ class TestUrlPresenter:
                 file_name="video.mp4",
                 action=operation,
                 method="POST",
-                url_endpoint="https://s3.amazonaws.com/url"
+                url_endpoint="https://s3.amazonaws.com/url",
+                fields={"expireIn": 900, "s3Key": f"path/video.mp4"}
             )
 
             result = presenter.return_generate_presigned_url(url)
 
-            assert result.action == operation
+            assert result['action'] == operation
 
     def test_return_generate_presigned_url_with_different_methods(self, presenter):
         """Testa retorno com diferentes métodos HTTP"""
@@ -118,22 +125,19 @@ class TestUrlPresenter:
                 file_name="video.mp4",
                 action="upload",
                 method=method,
-                url_endpoint="https://s3.amazonaws.com/url"
+                url_endpoint="https://s3.amazonaws.com/url",
+                fields={"expireIn": 900, "s3Key": "path/video.mp4"}
             )
 
             result = presenter.return_generate_presigned_url(url)
 
-            assert result.method == method
+            assert result['method'] == method
 
     def test_return_generate_presigned_url_with_complex_fields(self, presenter):
         """Testa retorno com fields complexos"""
         complex_fields = {
-            "key": "uploads/videos/2026/02/04/video.mp4",
-            "bucket": "vdsc-prd-s3-bucket",
-            "acl": "private",
-            "content-type": "video/mp4",
-            "expires": "3600",
-            "x-amz-meta-custom": "value"
+            "expireIn": 3600,
+            "s3Key": "uploads/videos/2026/02/04/video.mp4"
         }
 
         url = Url(
@@ -146,7 +150,8 @@ class TestUrlPresenter:
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert result.fields == complex_fields
+        assert result['expiresIn'] == 3600
+        assert result['s3Key'] == "uploads/videos/2026/02/04/video.mp4"
 
     def test_return_generate_presigned_url_with_empty_url_endpoint(self, presenter):
         """Testa retorno com URL endpoint vazio"""
@@ -154,29 +159,31 @@ class TestUrlPresenter:
             file_name="video.mp4",
             action="upload",
             method="POST",
-            url_endpoint=""
+            url_endpoint="",
+            fields={"expireIn": 900, "s3Key": "uploads/video.mp4"}
         )
 
         result = presenter.return_generate_presigned_url(url)
 
-        assert result.url_endpoint == ""
+        assert result['url'] == ""
 
     def test_return_generate_presigned_url_returns_new_instance(self, presenter):
-        """Testa que retorna nova instância de UrlResponseDto"""
+        """Testa que retorna nova instância (dicts diferentes)"""
         url = Url(
             file_name="video.mp4",
             action="upload",
             method="POST",
-            url_endpoint="https://s3.amazonaws.com/url"
+            url_endpoint="https://s3.amazonaws.com/url",
+            fields={"expireIn": 900, "s3Key": "uploads/video.mp4"}
         )
 
         result1 = presenter.return_generate_presigned_url(url)
         result2 = presenter.return_generate_presigned_url(url)
 
-        # Verifica que são instâncias diferentes
-        assert result1 is not result2
-        # Mas com os mesmos dados
-        assert result1.to_dict() == result2.to_dict()
+        # Verifica que são dicts com os mesmos dados
+        assert result1 == result2
+        assert isinstance(result1, dict)
+        assert isinstance(result2, dict)
 
     def test_return_generate_presigned_url_with_different_file_types(self, presenter):
         """Testa retorno com diferentes tipos de arquivo"""
@@ -192,9 +199,10 @@ class TestUrlPresenter:
                 file_name=file_name,
                 action="upload",
                 method="POST",
-                url_endpoint="https://s3.amazonaws.com/url"
+                url_endpoint="https://s3.amazonaws.com/url",
+                fields={"expireIn": 900, "s3Key": f"uploads/{file_name}"}
             )
 
             result = presenter.return_generate_presigned_url(url)
 
-            assert result.file_name == file_name
+            assert result['FileName'] == file_name

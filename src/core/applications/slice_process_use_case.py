@@ -45,12 +45,12 @@ class SliceProcessUseCase:
             gateway.update_metadata(vdsc_metadata)
 
             # Movendo arquivo para área de processamento
-            file_uploaded_path = get_path_file(path_type = 'uploads', video_id=video_id, extension_file=extension_file, config=config)
-            file_processing_path = get_path_file(path_type = 'processing', video_id=video_id, extension_file=extension_file, config=config)
+            file_uploaded_path = get_path_file(prefix_path=config.s3_bucket.dir_uploads, video_id=video_id, extension_file=extension_file)
+            file_processing_path = get_path_file(prefix_path=config.s3_bucket.dir_processing, video_id=video_id, extension_file=extension_file)
             gateway.move_file(file_uploaded_path, file_processing_path)
 
             #Criando diretório para imagens processadas
-            video_output_directory = get_path_directory(path_type = 'processing', video_id=video_id,config=config)
+            video_output_directory = get_path_directory(prefix_path=config.s3_bucket.dir_processing, video_id=video_id)
             gateway.create_directory(video_output_directory)
 
             #Abrindo arquivo de video para processamento
@@ -62,7 +62,7 @@ class SliceProcessUseCase:
             logger.info(f"Finalizada captura de imagens para o vídeo ID: {event.video_id})")
 
             #Compactando arquivos para zip
-            zip_output_path = get_path_file(path_type = 'finished', video_id=video_id, extension_file='zip', config=config)
+            zip_output_path = get_path_file(config.s3_bucket.dir_finished, video_id=video_id, extension_file='zip')
             compress_images_to_zip(video_output_directory, zip_output_path, gateway, config)
 
             #Deletando diretório de imagens processadas

@@ -37,20 +37,42 @@ class TestSliceProcessUseCase:
     @pytest.fixture
     def mock_config(self):
         """Fixture da configuração"""
+        # Mock para QualityDTO
+        quality_mock = MagicMock()
+        quality_mock.ultra = 1080
+        quality_mock.high = 720
+        quality_mock.medium = 480
+        quality_mock.low = 360
+
+        # Mock para ScheduleRulesDTO
+        schedule_rules_mock = MagicMock()
+        schedule_rules_mock.retry_backoff_factor = 2
+        schedule_rules_mock.retry_arn = "arn:aws:events:us-east-1:123456789:rule/retry"
+        schedule_rules_mock.retry_role_arn = "arn:aws:iam::123456789:role/retry"
+        schedule_rules_mock.retry_dlq = "https://sqs.us-east-1.amazonaws.com/123456789/retry-dlq"
+
+        # Mock para VdscSettingsDTO
+        vdsc_settings_mock = MagicMock()
+        vdsc_settings_mock.zip_compression_level = 6
+        vdsc_settings_mock.png_compression_level = 3
+        vdsc_settings_mock.quality = quality_mock
+        vdsc_settings_mock.schedule_event_rules = schedule_rules_mock
+
+        # Mock para S3ConfigDTO
+        s3_config_mock = MagicMock()
+        s3_config_mock.bucket_name = "test-bucket"
+        s3_config_mock.dir_uploads = "uploads/"
+        s3_config_mock.dir_processing = "processing/"
+        s3_config_mock.dir_finished = "finished/"
+
+        # Mock para VdscConfigDTO
         config = MagicMock(spec=VdscConfigDTO)
-        config.s3_bucket = {
-            "dir_uploads": "uploads/",
-            "dir_processing": "processing/",
-            "dir_finished": "finished/"
-        }
-        config.vdsc = {
-            "zip_compression_level": 6,
-            "png_compression_level": 3,
-            "quality": {"high": 720, "medium": 480, "low": 360},
-            "schedule_event_rules": {
-                "retry_backoff_factor": 2
-            }
-        }
+        config.aws_region = "us-east-1"
+        config.dynamodb_table_name = "VideoSlice"
+        config.event_bus_name = "default"
+        config.s3_bucket = s3_config_mock
+        config.vdsc = vdsc_settings_mock
+
         return config
 
     @pytest.fixture

@@ -23,7 +23,7 @@ def compress_images_to_zip(output_directory: str, zip_directory: str, gateway: S
     file_info_list = get_file_info_list(output_directory, gateway)
 
     #Cria buffer zip informando nível de compressão
-    buffer_zip = create_zip_buffer(file_info_list, config.vdsc['zip_compression_level'])
+    buffer_zip = create_zip_buffer(file_info_list, config.vdsc.zip_compression_level)
 
     #Salva arquivo zip no S3
     gateway.save_file(zip_directory, buffer_zip.read())
@@ -99,16 +99,14 @@ def get_multiplier_time_unit(time_unit: str) -> int:
     return 1000 if time_unit == 's' else 1
 
 
-def get_path_file(path_type, video_id, extension_file, config: VdscConfigDTO) -> str:
+def get_path_file(prefix_path: str, video_id, extension_file) -> str:
     """Retorna o caminho completo do arquivo"""
-    dir_key = "dir_" + path_type
-    return f"{config.s3_bucket[dir_key]}{video_id}.{extension_file}"
+    return f"{prefix_path}{video_id}.{extension_file}"
 
 
-def get_path_directory(path_type, video_id, config: VdscConfigDTO) -> str:
+def get_path_directory(prefix_path: str, video_id) -> str:
     """Retorna o caminho completo do diretório"""
-    dir_key = "dir_" + path_type
-    return f"{config.s3_bucket[dir_key]}{video_id}/"
+    return f"{prefix_path}{video_id}/"
 
 
 def get_recurrent_time_intervals(start_time: int, end_time: int, interval: int):
@@ -152,13 +150,13 @@ def process_video_frames(video_id, vdsc_metadata, video_data, video_output_direc
     logger.info(f"video_temp_path: {video_temp_path}")
     output_quality = vdsc_metadata.quality
     logger.info(f"output_quality: {output_quality}")
-    png_compression = config.vdsc['png_compression_level']
+    png_compression = config.vdsc.png_compression_level
     logger.info(f"png_compression: {png_compression}")
 
     try:
         vidcap = cv2.VideoCapture(video_temp_path)
         interval_list = create_interval_list(vdsc_metadata, time_unit_multiplier)
-        target_frame_height = config.vdsc['quality'][output_quality]
+        target_frame_height = getattr(config.vdsc.quality, output_quality, None)
         target_frame_width = None
         original_width = None
 
@@ -208,7 +206,7 @@ def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_met
             vdsc_metadata.retries += 1
             message = f"Falha no processamento do video {vdsc_metadata.video_id}: {str(ex)}. Iniciando tentativa {retries+1} de {max_retries}."
             vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(message))
-            schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc['schedule_event_rules']['retry_backoff_factor'])
-            gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc['schedule_event_rules'])
+            schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
+            gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules)
             return vdsc_metadata, message
     return None

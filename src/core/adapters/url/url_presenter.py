@@ -9,5 +9,5 @@ class UrlPresenter:
             "expiresIn": url.fields["expireIn"],
             "s3Key": url.fields["s3Key"],
             "action": url.action,
-            "method": url.method,
+            "method": url.method
         }
