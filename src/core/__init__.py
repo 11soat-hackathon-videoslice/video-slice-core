@@ -4,7 +4,8 @@ from .domain import LogEntry, VdscMetadata
 from .dtos import LogEntryDTO, VdscMetadataDTO, VdscConfigDTO, VdscSettingsDTO, QualityDTO, ScheduleRulesDTO, S3ConfigDTO
 from .enums import VdscStatusEnum, VideoQuality
 from .exceptions import VdscException
-from .interfaces import SliceDataProxyInterface, SliceControllerInterface, SliceGatewayInferface, VdscExceptionHandlerInterface, UrlDataSourceInterface, UrlGatewayInterface, UrlControllerInterface
+from .interfaces import SliceDataProxyInterface, SliceControllerInterface, SliceGatewayInferface, VdscExceptionHandlerInterface
+from .interfaces import UrlGatewayInterface, UrlDataSourceInterface, UrlControllerInterface
 from .utils import get_event_schedule_timestamp
 
 __all__ = [

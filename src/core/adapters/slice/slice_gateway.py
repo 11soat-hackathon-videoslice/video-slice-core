@@ -1,5 +1,7 @@
 import datetime
 
+from core.domain.notification import Notification
+from core.dtos.notification_dto import NotificationDto
 from core.interfaces import SliceGatewayInferface
 from core.interfaces import SliceDataProxyInterface
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
@@ -35,8 +37,15 @@ class SliceGateway(SliceGatewayInferface):
         event_metadata = VdscMetadataDTO.from_dict(vdsc_metadata.to_dict())
         self.dataproxy.send_schedule_retry_event(event_metadata, schedule_time, schedule_config)
 
-    def send_notification(self, vdsc_metadata: VdscMetadata, channels: list[str], message: str) -> None:
-        pass
+    def send_notification(self, notification: Notification) -> None:
+        import threading
+
+        notification_dto = NotificationDto.from_domain(notification)
+        threading.Thread(
+            target=self.dataproxy.send_notification,
+            args=(notification_dto,),
+            daemon=True
+        ).start()
 
     def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
         """Atualiza metadados convertendo a entidade de domínio para DTO"""

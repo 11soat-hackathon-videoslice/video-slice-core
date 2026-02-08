@@ -3,6 +3,8 @@ import pytest
 import io
 import zipfile
 from unittest.mock import Mock, MagicMock, patch
+from datetime import datetime
+from uuid import UUID
 from core.utils.slice_process_util import (
     compress_images_to_zip,
     create_temporary_file,
@@ -19,12 +21,20 @@ from core.utils.slice_process_util import (
     get_frame_widths,
     metadata_update_status,
     process_video_frames,
-    set_exception_status
+    set_exception_status,
+    set_exception_status_failed,
+    set_exception_status_retrying,
+    create_notification,
+    create_email_notification,
+    create_web_notification
 )
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 from core.dtos.vdsc_config_dto import VdscConfigDTO
 from core.enums.vdsc_status_enum import VdscStatusEnum
+from core.enums.email_template_enum import EmailTemplateEnum
+from core.enums.notification_channels_enum import NotificationChannelsEnum
 from core.domain.vdsc_metadata import VdscMetadata, LogEntry
+from core.domain.notification import Notification, EmailPayload, WebPayload
 
 
 @pytest.mark.unit
@@ -315,3 +325,117 @@ class TestSliceProcessUtil:
         assert result_metadata.status == VdscStatusEnum.RETRYING.value
         assert "Iniciando tentativa 2 de 3" in message
         assert mock_gateway.send_schedule_retry_event.called
+
+    def test_set_exception_status_failed_direct(self, mock_gateway, mock_config, valid_event_dto):
+        """Testa função set_exception_status_failed diretamente"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        metadata.max_retry = 3
+        ex = Exception("Erro crítico")
+
+        result_metadata, message = set_exception_status_failed(mock_gateway, ex, metadata)
+
+        assert result_metadata.status == VdscStatusEnum.FAILED.value
+        assert "falhou após 3 tentativas" in message
+        assert "Erro crítico" in message
+        assert mock_gateway.send_notification.called
+        mock_gateway.send_notification.assert_called_once()
+
+    def test_set_exception_status_retrying_direct(self, mock_gateway, mock_config, valid_event_dto):
+        """Testa função set_exception_status_retrying diretamente"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        metadata.retries = 0
+        metadata.max_retry = 3
+        ex = Exception("Erro temporário")
+
+        result_metadata, message = set_exception_status_retrying(mock_gateway, ex, metadata, mock_config)
+
+        assert result_metadata.status == VdscStatusEnum.RETRYING.value
+        assert "Iniciando tentativa 1 de 3" in message
+        assert "Erro temporário" in message
+        assert mock_gateway.send_schedule_retry_event.called
+        assert mock_gateway.send_notification.called
+
+    def test_create_email_notification(self, valid_event_dto):
+        """Testa criação de payload de email"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        result = create_email_notification(metadata, EmailTemplateEnum.UPDATE_STATUS)
+
+        assert isinstance(result, EmailPayload)
+        assert result.user_id == "user123"
+        assert result.template == EmailTemplateEnum.UPDATE_STATUS
+
+    def test_create_email_notification_finished(self, valid_event_dto):
+        """Testa criação de payload de email com template FINISHED"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        result = create_email_notification(metadata, EmailTemplateEnum.FINISHED)
+
+        assert isinstance(result, EmailPayload)
+        assert result.user_id == "user123"
+        assert result.template == EmailTemplateEnum.FINISHED
+
+    def test_create_web_notification(self, valid_event_dto):
+        """Testa criação de payload de notificação web"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        message = "Processamento em andamento"
+
+        result = create_web_notification(metadata, message)
+
+        assert isinstance(result, WebPayload)
+        assert result.user_id == "user123"
+        assert result.message == message
+        assert isinstance(result.timestamp, datetime)
+        assert result.is_read is False
+
+    def test_create_notification_with_email_and_web(self, valid_event_dto):
+        """Testa criação de notificação completa com email e web"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        message = "Vídeo processado com sucesso"
+
+        result = create_notification(metadata, ['email', 'web'], message, EmailTemplateEnum.FINISHED)
+
+        assert isinstance(result, Notification)
+        assert isinstance(result.id, UUID)
+        assert NotificationChannelsEnum.EMAIL in result.channels
+        assert NotificationChannelsEnum.WEB in result.channels
+        assert len(result.content) == 1
+        assert result.content[0].email is not None
+        assert result.content[0].web is not None
+        assert result.content[0].email.template == EmailTemplateEnum.FINISHED
+        assert result.content[0].web.message == message
+
+    def test_create_notification_email_only(self, valid_event_dto):
+        """Testa criação de notificação apenas com email"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        result = create_notification(metadata, ['email'], None, EmailTemplateEnum.FAILED)
+
+        assert isinstance(result, Notification)
+        assert NotificationChannelsEnum.EMAIL in result.channels
+        assert len(result.content) == 1
+        assert result.content[0].email is not None
+        assert result.content[0].web is None
+
+    def test_create_notification_web_only(self, valid_event_dto):
+        """Testa criação de notificação apenas com web"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        message = "Notificação apenas web"
+
+        result = create_notification(metadata, ['web'], message, None)
+
+        assert isinstance(result, Notification)
+        assert NotificationChannelsEnum.WEB in result.channels
+        assert len(result.content) == 1
+        assert result.content[0].email is None
+        assert result.content[0].web is not None
+        assert result.content[0].web.message == message
+
+    def test_create_notification_empty_content(self, valid_event_dto):
+        """Testa criação de notificação sem conteúdo deve falhar se canal requer payload"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        # Deve lançar exceção pois canal EMAIL requer EmailPayload
+        with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):
+            create_notification(metadata, ['email'], None, None)
+

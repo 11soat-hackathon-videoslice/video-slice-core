@@ -2,7 +2,7 @@ import logging
 
 from core.domain.url import Url
 from core.dtos.url_dto import UrlRequestDto
-from core.interfaces.url import UrlGatewayInterface
+from core.interfaces import UrlGatewayInterface
 from core.exceptions.vdsc_exceptions import VdscException
 from core.enums.vdsc_status_enum import VdscStatusEnum
 

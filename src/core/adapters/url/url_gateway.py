@@ -1,6 +1,6 @@
 from core.domain.url import Url
 from core.dtos.url_dto import UrlRequestDto
-from core.interfaces.url import UrlGatewayInterface, UrlDataSourceInterface
+from core.interfaces import UrlGatewayInterface, UrlDataSourceInterface
 
 
 class UrlGateway(UrlGatewayInterface):

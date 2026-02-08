@@ -1,5 +1,7 @@
 import datetime
 from abc import ABC, abstractmethod
+
+from core.dtos.notification_dto import NotificationDto
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 
 class SliceDataProxyInterface(ABC):
@@ -33,7 +35,7 @@ class SliceDataProxyInterface(ABC):
         pass
 
     @abstractmethod
-    def send_notification(self, vdsc_metadata:VdscMetadataDTO, channels: list[str], message: str) -> None:
+    def send_notification(self, notification: NotificationDto) -> None:
         pass
 
     @abstractmethod

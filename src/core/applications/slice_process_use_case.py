@@ -4,6 +4,7 @@ from core.interfaces import SliceGatewayInferface
 from ..dtos.vdsc_metadata_dto import VdscMetadataDTO
 from ..dtos.vdsc_config_dto import VdscConfigDTO
 from ..domain.vdsc_metadata import VdscMetadata, LogEntry
+from ..enums.email_template_enum import EmailTemplateEnum
 from ..enums.vdsc_status_enum import VdscStatusEnum
 from ..exceptions.vdsc_exceptions import VdscException
 from core.interfaces import VdscExceptionHandlerInterface
@@ -13,7 +14,8 @@ from ..utils.slice_process_util import (
     get_path_directory,
     process_video_frames,
     metadata_update_status,
-    set_exception_status
+    set_exception_status,
+    create_notification,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -32,17 +34,19 @@ class SliceProcessUseCase:
         retries = vdsc_metadata.retries
         max_retries = vdsc_metadata.max_retry
         extension_file = vdsc_metadata.extension_file
-
+        log_message = None
         try:
             # Atualizando status de metadados para Processing ou Retrying
             if vdsc_metadata.status.upper() == VdscStatusEnum.UPLOADED.value.upper():
-                vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.PROCESSING, LogEntry(f"Iniciando processamento do vídeo: {video_id}"))
+                log_message=f"Iniciando processamento do vídeo: {video_id}."
+                vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.PROCESSING, LogEntry(log_message))
             elif vdsc_metadata.status.upper() == VdscStatusEnum.RETRYING.value.upper():
                 retries += 1
                 vdsc_metadata.retries = retries
                 log_message = f"Reiniciando processamento do vídeo: {video_id}. Tentativa {retries} de {max_retries}."
                 vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.RETRYING, LogEntry(log_message))
             gateway.update_metadata(vdsc_metadata)
+            gateway.send_notification(create_notification(vdsc_metadata,['web','email'], log_message, EmailTemplateEnum.UPDATE_STATUS))
 
             # Movendo arquivo para área de processamento
             file_uploaded_path = get_path_file(prefix_path=config.s3_bucket.dir_uploads, video_id=video_id, extension_file=extension_file)
@@ -72,22 +76,21 @@ class SliceProcessUseCase:
             gateway.delete_file(file_processing_path)
 
             #Atualizando metadados para finalizado
-            vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.FINISHED, LogEntry("Processamento finalizado com sucesso."))
+            log_message = f"Processamento do vídeo {video_id} finalizado com sucesso."
+            vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.FINISHED, LogEntry(log_message))
             gateway.update_metadata(vdsc_metadata)
+            gateway.send_notification(create_notification(vdsc_metadata,['web','email'], log_message, EmailTemplateEnum.FINISHED))
+
 
             logger.info(f"Processamento concluído com sucesso para o vídeo ID: {event.video_id}")
 
         except Exception as ex:
             logger.error(f"Erro ao processar o vídeo ID {event.video_id}: {str(ex)}", exc_info=ex)
-
             if retries == max_retries:
                 vdsc_metadata_error, message = set_exception_status(gateway, ex, vdsc_metadata, VdscStatusEnum.FAILED, config)
+
             else:
                 vdsc_metadata_error, message = set_exception_status(gateway, ex, vdsc_metadata, VdscStatusEnum.RETRYING, config)
-
-            if vdsc_metadata_error:
-                vdsc_metadata = vdsc_metadata_error
-                gateway.update_metadata(vdsc_metadata_error)
-                gateway.send_notification(vdsc_metadata_error, ['email'], message)
+            gateway.update_metadata(vdsc_metadata_error)
             raise VdscException(message, "ERROR", vdsc_metadata_error.to_dict())
 

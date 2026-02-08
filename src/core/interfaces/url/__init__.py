@@ -1,6 +1,4 @@
-from .url_controller_interface import UrlControllerInterface
-from .url_datasource_interface import UrlDataSourceInterface
-from .url_gateway_interface import UrlGatewayInterface
+from .url_interfaces import UrlGatewayInterface, UrlDataSourceInterface, UrlControllerInterface
 
 __all__ = [
     "UrlControllerInterface",

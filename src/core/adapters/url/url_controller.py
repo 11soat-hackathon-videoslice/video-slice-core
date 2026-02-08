@@ -2,8 +2,7 @@ from core.adapters.url.url_gateway import UrlGateway
 from core.adapters.url.url_presenter import UrlPresenter
 from core.applications.generate_pressigned_url_use_case import GeneratePresignedURLUseCase
 from core.dtos.url_dto import UrlRequestDto
-from core.interfaces.url import UrlDataSourceInterface
-from core.interfaces.url.url_controller_interface import UrlControllerInterface
+from core.interfaces import UrlDataSourceInterface, UrlControllerInterface
 
 
 class UrlController(UrlControllerInterface):

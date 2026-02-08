@@ -1,3 +1,7 @@
+from typing import Optional
+from datetime import datetime
+from uuid import uuid4
+
 import io
 import logging
 import tempfile
@@ -7,14 +11,23 @@ import cv2
 
 from pathlib import Path
 from core.interfaces import SliceGatewayInferface
+from ..domain.notification import EmailPayload, WebPayload, Notification, NotificationContent
 from ..dtos.vdsc_config_dto import VdscConfigDTO
 from ..domain.vdsc_metadata import VdscMetadata, LogEntry
+from ..enums.email_template_enum import EmailTemplateEnum
+from ..enums.notification_channels_enum import NotificationChannelsEnum
 from ..enums.vdsc_status_enum import VdscStatusEnum
 from ..utils import get_event_schedule_timestamp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def create_email_notification(metadata: VdscMetadata, email_template: EmailTemplateEnum) -> EmailPayload:
+    """Cria payload de notificação por email"""
+    return EmailPayload(
+        user_id=metadata.user_id,
+        template=email_template
+    )
 
 def compress_images_to_zip(output_directory: str, zip_directory: str, gateway: SliceGatewayInferface,
                             config: VdscConfigDTO) -> None:
@@ -27,15 +40,6 @@ def compress_images_to_zip(output_directory: str, zip_directory: str, gateway: S
 
     #Salva arquivo zip no S3
     gateway.save_file(zip_directory, buffer_zip.read())
-
-
-def create_temporary_file(video_data, file_extension) -> str:
-    """Cria arquivo temporário com os dados do vídeo"""
-    with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as temp_file:
-        temp_file.write(video_data)
-        temp_file_path = temp_file.name
-    return temp_file_path
-
 
 def create_interval_list(vdsc_metadata, time_unit_multiplier):
     """Cria lista de intervalos de tempo para extração de frames"""
@@ -52,6 +56,40 @@ def create_interval_list(vdsc_metadata, time_unit_multiplier):
         time_interval_list = get_specific_time_intervals(vdsc_metadata.time_interval, int(time_unit_multiplier))
     return time_interval_list
 
+def create_notification(metadata: VdscMetadata, channels: list[str],
+                        web_message: Optional[str],
+                        email_template: Optional[EmailTemplateEnum]) -> Notification:
+    """Cria notificação com payloads de email e web"""
+    content = []
+    # Cria conteúdo apenas se houver dados
+    if email_template or web_message:
+        content.append(NotificationContent(
+            email=create_email_notification(metadata, email_template) if email_template else None,
+            web=create_web_notification(metadata, web_message) if web_message else None
+        ))
+
+    return Notification(
+        id=uuid4(),
+        metadata=metadata,
+        channels=[NotificationChannelsEnum[ch.upper()] for ch in channels],
+        content=content
+    )
+
+def create_temporary_file(video_data, file_extension) -> str:
+    """Cria arquivo temporário com os dados do vídeo"""
+    with tempfile.NamedTemporaryFile(suffix=f".{file_extension}", delete=False) as temp_file:
+        temp_file.write(video_data)
+        temp_file_path = temp_file.name
+    return temp_file_path
+
+def create_web_notification(metadata: VdscMetadata, message: str) -> WebPayload:
+    """Cria payload de notificação web"""
+    return WebPayload(
+        user_id=metadata.user_id,
+        message=message,
+        timestamp=datetime.now(),
+        is_read=False
+    )
 
 def create_zip_buffer(file_info_list: list[tuple[str, bytes]], compression_level: int) -> io.BytesIO:
     """Cria um buffer zip com os arquivos fornecidos"""
@@ -192,21 +230,36 @@ def process_video_frames(video_id, vdsc_metadata, video_data, video_output_direc
         raise
 
 
+
 def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, config: VdscConfigDTO):
     """Define o status de exceção e retorna metadados e mensagem"""
-    retries = vdsc_metadata.retries
-    max_retries = vdsc_metadata.max_retry
-
     match new_status:
         case VdscStatusEnum.FAILED:
-            message = f"Processamento do video {vdsc_metadata.video_id} falhou após {max_retries} tentativas: {str(ex)}."
-            vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {max_retries} tentativas."))
-            return vdsc_metadata, message
+            return set_exception_status_failed(gateway, ex, vdsc_metadata)
         case VdscStatusEnum.RETRYING:
-            vdsc_metadata.retries += 1
-            message = f"Falha no processamento do video {vdsc_metadata.video_id}: {str(ex)}. Iniciando tentativa {retries+1} de {max_retries}."
-            vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(message))
-            schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
-            gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules)
-            return vdsc_metadata, message
+            return set_exception_status_retrying(gateway, ex, vdsc_metadata, config)
     return None
+
+def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata):
+    """Define status como FAILED e envia notificação"""
+    new_status = VdscStatusEnum.FAILED
+    max_retries = vdsc_metadata.max_retry
+    message = f"Processamento do video {vdsc_metadata.video_id} falhou após {max_retries} tentativas: {str(ex)}."
+    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {max_retries} tentativas."))
+    gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.FAILED))
+    return vdsc_metadata, message
+
+def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, config: VdscConfigDTO):
+    """Define status como RETRYING e agenda nova tentativa"""
+    new_status = VdscStatusEnum.RETRYING
+    retries = vdsc_metadata.retries
+    max_retries = vdsc_metadata.max_retry
+    vdsc_metadata.retries += 1
+    message = f"Falha no processamento do video {vdsc_metadata.video_id}: {str(ex)}. Iniciando tentativa {retries+1} de {max_retries}."
+    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(message))
+    schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
+    gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules)
+    gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.UPDATE_STATUS))
+    return vdsc_metadata, message
+
+

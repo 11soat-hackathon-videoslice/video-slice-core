@@ -1,5 +1,7 @@
 import datetime
 from abc import ABC, abstractmethod
+
+from core.domain.notification import Notification
 from core.domain.vdsc_metadata import VdscMetadata
 
 class SliceGatewayInferface(ABC):
@@ -37,7 +39,7 @@ class SliceGatewayInferface(ABC):
         pass
 
     @abstractmethod
-    def send_notification(self, vdsc_metadata:VdscMetadata, channels: list[str], message: str) -> None:
+    def send_notification(self, notification: Notification) -> None:
         pass
 
     @abstractmethod

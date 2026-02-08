@@ -1,9 +1,14 @@
 """Testes unitários para VdscGateway"""
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock, patch
+from uuid import uuid4
+from datetime import datetime
 from core.adapters.slice.slice_gateway import SliceGateway
 from core.domain.vdsc_metadata import VdscMetadata
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.domain.notification import Notification, NotificationContent, EmailPayload, WebPayload
+from core.enums.notification_channels_enum import NotificationChannelsEnum
+from core.enums.email_template_enum import EmailTemplateEnum
 
 
 @pytest.mark.unit
@@ -93,3 +98,90 @@ class TestSliceGateway:
 
         assert isinstance(result, VdscMetadata)
         mock_dataproxy.update_metadata_by_video_id.assert_called_once()
+
+    @patch('threading.Thread')
+    def test_send_notification_with_email_and_web(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+        """Testa envio de notificação com email e web"""
+        # Preparar notificação
+        metadata = VdscMetadata(dto=valid_dto)
+        notification = Notification(
+            id=uuid4(),
+            channels=[NotificationChannelsEnum.EMAIL, NotificationChannelsEnum.WEB],
+            metadata=metadata,
+            content=[NotificationContent(
+                email=EmailPayload(user_id="user123", template=EmailTemplateEnum.UPDATE_STATUS),
+                web=WebPayload(user_id="user123", message="Test message", timestamp=datetime.now(), is_read=False)
+            )]
+        )
+
+        # Mock da thread
+        mock_thread_instance = MagicMock()
+        mock_thread.return_value = mock_thread_instance
+
+        # Executar
+        gateway.send_notification(notification)
+
+        # Verificar
+        mock_thread.assert_called_once()
+        mock_thread_instance.start.assert_called_once()
+
+    @patch('threading.Thread')
+    def test_send_notification_email_only(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+        """Testa envio de notificação apenas por email"""
+        metadata = VdscMetadata(dto=valid_dto)
+        notification = Notification(
+            id=uuid4(),
+            channels=[NotificationChannelsEnum.EMAIL],
+            metadata=metadata,
+            content=[NotificationContent(
+                email=EmailPayload(user_id="user123", template=EmailTemplateEnum.FINISHED)
+            )]
+        )
+
+        mock_thread_instance = MagicMock()
+        mock_thread.return_value = mock_thread_instance
+
+        gateway.send_notification(notification)
+
+        mock_thread.assert_called_once()
+        mock_thread_instance.start.assert_called_once()
+
+    @patch('threading.Thread')
+    def test_send_notification_web_only(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+        """Testa envio de notificação apenas por web"""
+        metadata = VdscMetadata(dto=valid_dto)
+        notification = Notification(
+            id=uuid4(),
+            channels=[NotificationChannelsEnum.WEB],
+            metadata=metadata,
+            content=[NotificationContent(
+                web=WebPayload(user_id="user123", message="Web only message", timestamp=datetime.now(), is_read=False)
+            )]
+        )
+
+        mock_thread_instance = MagicMock()
+        mock_thread.return_value = mock_thread_instance
+
+        gateway.send_notification(notification)
+
+        mock_thread.assert_called_once()
+        mock_thread_instance.start.assert_called_once()
+
+    def test_send_schedule_retry_event(self, gateway, mock_dataproxy, valid_dto):
+        """Testa envio de evento de retry agendado"""
+        metadata = VdscMetadata(dto=valid_dto)
+        schedule_time = datetime(2026, 2, 8, 12, 0, 0)
+        schedule_config = {
+            "retry_arn": "arn:aws:events:us-east-1:123456789:rule/retry",
+            "retry_role_arn": "arn:aws:iam::123456789:role/retry",
+            "retry_dlq": "https://sqs.us-east-1.amazonaws.com/123456789/retry-dlq"
+        }
+
+        gateway.send_schedule_retry_event(metadata, schedule_time, schedule_config)
+
+        mock_dataproxy.send_schedule_retry_event.assert_called_once()
+        args = mock_dataproxy.send_schedule_retry_event.call_args[0]
+        assert isinstance(args[0], VdscMetadataDTO)
+        assert args[1] == schedule_time
+        assert args[2] == schedule_config
+
