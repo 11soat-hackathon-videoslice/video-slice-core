@@ -38,14 +38,8 @@ class SliceGateway(SliceGatewayInferface):
         self.dataproxy.send_schedule_retry_event(event_metadata, schedule_time, schedule_config)
 
     def send_notification(self, notification: Notification) -> None:
-        import threading
-
         notification_dto = NotificationDto.from_domain(notification)
-        threading.Thread(
-            target=self.dataproxy.send_notification,
-            args=(notification_dto,),
-            daemon=True
-        ).start()
+        self.dataproxy.send_notification(notification_dto)
 
     def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
         """Atualiza metadados convertendo a entidade de domínio para DTO"""
