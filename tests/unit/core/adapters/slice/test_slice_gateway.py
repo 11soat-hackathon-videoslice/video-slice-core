@@ -1,6 +1,6 @@
 """Testes unitários para VdscGateway"""
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 from uuid import uuid4
 from datetime import datetime
 from core.adapters.slice.slice_gateway import SliceGateway
@@ -99,8 +99,7 @@ class TestSliceGateway:
         assert isinstance(result, VdscMetadata)
         mock_dataproxy.update_metadata_by_video_id.assert_called_once()
 
-    @patch('threading.Thread')
-    def test_send_notification_with_email_and_web(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+    def test_send_notification_with_email_and_web(self, gateway, mock_dataproxy, valid_dto):
         """Testa envio de notificação com email e web"""
         # Preparar notificação
         metadata = VdscMetadata(dto=valid_dto)
@@ -114,19 +113,16 @@ class TestSliceGateway:
             )]
         )
 
-        # Mock da thread
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
-
         # Executar
         gateway.send_notification(notification)
 
         # Verificar
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_dataproxy.send_notification.assert_called_once()
+        args = mock_dataproxy.send_notification.call_args[0]
+        assert str(args[0].id) == str(notification.id)
+        assert args[0].channels == notification.channels
 
-    @patch('threading.Thread')
-    def test_send_notification_email_only(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+    def test_send_notification_email_only(self, gateway, mock_dataproxy, valid_dto):
         """Testa envio de notificação apenas por email"""
         metadata = VdscMetadata(dto=valid_dto)
         notification = Notification(
@@ -138,16 +134,14 @@ class TestSliceGateway:
             )]
         )
 
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
-
         gateway.send_notification(notification)
 
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_dataproxy.send_notification.assert_called_once()
+        args = mock_dataproxy.send_notification.call_args[0]
+        assert str(args[0].id) == str(notification.id)
+        assert NotificationChannelsEnum.EMAIL in args[0].channels
 
-    @patch('threading.Thread')
-    def test_send_notification_web_only(self, mock_thread, gateway, mock_dataproxy, valid_dto):
+    def test_send_notification_web_only(self, gateway, mock_dataproxy, valid_dto):
         """Testa envio de notificação apenas por web"""
         metadata = VdscMetadata(dto=valid_dto)
         notification = Notification(
@@ -159,13 +153,12 @@ class TestSliceGateway:
             )]
         )
 
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
-
         gateway.send_notification(notification)
 
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_dataproxy.send_notification.assert_called_once()
+        args = mock_dataproxy.send_notification.call_args[0]
+        assert str(args[0].id) == str(notification.id)
+        assert NotificationChannelsEnum.WEB in args[0].channels
 
     def test_send_schedule_retry_event(self, gateway, mock_dataproxy, valid_dto):
         """Testa envio de evento de retry agendado"""

@@ -62,7 +62,7 @@ class TestNotificationController:
         with patch.object(controller.factory_use_case, 'get_use_case') as mock_get_use_case:
             mock_use_case = Mock()
             mock_get_use_case.return_value = mock_use_case
-            controller.send(notification)
+            controller.send(notification, NotificationChannelsEnum.EMAIL)
             mock_get_use_case.assert_called_once()
             mock_use_case.execute.assert_called_once()
 
@@ -85,7 +85,7 @@ class TestNotificationController:
         with patch.object(controller.factory_use_case, 'get_use_case') as mock_get_use_case:
             mock_use_case = Mock()
             mock_get_use_case.return_value = mock_use_case
-            controller.send(notification)
+            controller.send(notification, NotificationChannelsEnum.WEB)
             mock_get_use_case.assert_called_once()
             mock_use_case.execute.assert_called_once()
 
@@ -105,7 +105,7 @@ class TestNotificationController:
         with patch.object(controller.factory_use_case, 'get_use_case') as mock_get_use_case:
             mock_use_case = Mock()
             mock_get_use_case.return_value = mock_use_case
-            controller.send(notification)
+            controller.send(notification, NotificationChannelsEnum.EMAIL)
             call_args = mock_get_use_case.call_args[0][0]
             assert call_args == NotificationChannelsEnum.EMAIL
             mock_get_use_case.assert_called_once_with(NotificationChannelsEnum.EMAIL)
@@ -126,7 +126,7 @@ class TestNotificationController:
         with patch.object(controller.factory_use_case, 'get_use_case') as mock_get_use_case:
             mock_use_case = Mock()
             mock_get_use_case.return_value = mock_use_case
-            controller.send(notification)
+            controller.send(notification, NotificationChannelsEnum.EMAIL)
             call_args = mock_use_case.execute.call_args
             assert call_args is not None
 
@@ -148,7 +148,7 @@ class TestNotificationController:
             mock_use_case.execute.side_effect = Exception("Erro no use case")
             mock_get_use_case.return_value = mock_use_case
             with pytest.raises(Exception, match="Erro no use case"):
-                controller.send(notification)
+                controller.send(notification, NotificationChannelsEnum.EMAIL)
 
     def test_send_notification_with_invalid_channel_raises_error(self, mock_datasource, valid_metadata_dto):
         controller = NotificationController(mock_datasource)
@@ -166,5 +166,5 @@ class TestNotificationController:
         with patch.object(controller.factory_use_case, 'get_use_case') as mock_get_use_case:
             mock_get_use_case.side_effect = ValueError("Não encontrado caso de uso para o canal")
             with pytest.raises(ValueError, match="Não encontrado caso de uso para o canal"):
-                controller.send(notification)
+                controller.send(notification, "INVALID_CHANNEL")
 

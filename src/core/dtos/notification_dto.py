@@ -22,10 +22,11 @@ class EmailPayloadDto:
         """Converte o objeto para formato JSON"""
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
-    def from_dict(self):
+    @staticmethod
+    def from_dict(data: dict) -> 'EmailPayloadDto':
         return EmailPayloadDto(
-            user_id=self.user_id,
-            template=EmailTemplateEnum[self.template]
+            user_id=data['user_id'],
+            template=EmailTemplateEnum[data['template']]
         )
 
 @dataclass(frozen=True)
@@ -47,12 +48,13 @@ class WebPayloadDto:
         """Converte o objeto para formato JSON"""
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
-    def from_dict(self):
+    @staticmethod
+    def from_dict(data: dict) -> 'WebPayloadDto':
         return WebPayloadDto(
-            user_id=self.user_id,
-            message=self.message,
-            timestamp=datetime.now(),
-            is_read=self.is_read
+            user_id=data['user_id'],
+            message=data['message'],
+            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data['timestamp'], str) else data['timestamp'],
+            is_read=data['is_read']
         )
 
 @dataclass(frozen=True)
@@ -70,10 +72,11 @@ class NotificationContentDto:
         """Converte o objeto para formato JSON"""
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
-    def from_dict(self):
+    @staticmethod
+    def from_dict(data: dict) -> 'NotificationContentDto':
         return NotificationContentDto(
-            email=EmailPayloadDto.from_dict(self.email) if self.email else None,
-            web=WebPayloadDto.from_dict(self.web) if self.web else None
+            email=EmailPayloadDto.from_dict(data['email']) if data.get('email') else None,
+            web=WebPayloadDto.from_dict(data['web']) if data.get('web') else None
         )
 
 
@@ -96,12 +99,13 @@ class NotificationDto:
         """Converte o objeto para formato JSON"""
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
-    def from_dict(self):
+    @staticmethod
+    def from_dict(data: dict) -> 'NotificationDto':
         return NotificationDto(
-            id=self.id,
-            channels=[NotificationChannelsEnum[channel] for channel in self.channels],
-            metadata=VdscMetadataDto.from_dict(self.metadata),
-            content=[NotificationContentDto.from_dict(content) for content in self.content]
+            id=str(data['id']),
+            channels=[NotificationChannelsEnum[channel] for channel in data['channels']],
+            metadata=VdscMetadataDTO.from_dict(data['metadata']),
+            content=[NotificationContentDto.from_dict(content) for content in data['content']]
         )
 
     def __post_init(self):
