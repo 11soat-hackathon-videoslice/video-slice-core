@@ -1,6 +1,9 @@
 """Data Transfer Objects for Video Slice Metadata."""
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.domain.vdsc_metadata import VdscMetadata
 
 
 
@@ -163,6 +166,35 @@ class VdscMetadataDTO:
             retries=data['retries'],
             quality=data['quality'],
             logs=logs
+        )
+
+    @classmethod
+    def from_domain(cls, metadata: 'VdscMetadata') -> 'VdscMetadataDTO':
+        """Converte VdscMetadata domain para VdscMetadataDTO"""
+        from core.domain.log_entry import LogEntry
+
+        logs_dtos = [
+            LogEntryDTO(timestamp=log.timestamp, info=log.info) if isinstance(log, LogEntry)
+            else LogEntryDTO(timestamp=log['timestamp'], info=log['info'])
+            for log in metadata.logs
+        ]
+
+        return cls(
+            video_id=metadata.video_id,
+            file_name=metadata.file_name,
+            extension_file=metadata.extension_file,
+            status=metadata.status,
+            created=metadata.created,
+            user_id=metadata.user_id,
+            total_time=metadata.total_time,
+            unit_time=metadata.unit_time,
+            start_time=metadata.start_time,
+            end_time=metadata.end_time,
+            time_interval=metadata.time_interval,
+            max_retry=metadata.max_retry,
+            retries=metadata.retries,
+            quality=metadata.quality,
+            logs=logs_dtos
         )
 
     @classmethod

@@ -1,12 +1,11 @@
+import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from core.enums.email_template_enum import EmailTemplateEnum
 from core.enums.notification_channels_enum import NotificationChannelsEnum
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
-
-if TYPE_CHECKING:
-    from core.domain.notification import Notification
+from core.domain.notification import Notification
 
 @dataclass(frozen=True)
 class EmailPayloadDto:
@@ -18,6 +17,11 @@ class EmailPayloadDto:
             "user_id": self.user_id,
             "template": self.template.name
         }
+
+    def to_json(self) -> str:
+        """Converte o objeto para formato JSON"""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
     def from_dict(self):
         return EmailPayloadDto(
             user_id=self.user_id,
@@ -38,6 +42,11 @@ class WebPayloadDto:
             "timestamp": self.timestamp.isoformat(),
             "is_read": self.is_read
         }
+
+    def to_json(self) -> str:
+        """Converte o objeto para formato JSON"""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
     def from_dict(self):
         return WebPayloadDto(
             user_id=self.user_id,
@@ -56,6 +65,11 @@ class NotificationContentDto:
             "email": self.email.to_dict() if self.email else None,
             "web": self.web.to_dict() if self.web else None
         }
+
+    def to_json(self) -> str:
+        """Converte o objeto para formato JSON"""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
     def from_dict(self):
         return NotificationContentDto(
             email=EmailPayloadDto.from_dict(self.email) if self.email else None,
@@ -77,6 +91,11 @@ class NotificationDto:
             "metadata": self.metadata.to_dict(),
             "content": [content.to_dict() for content in self.content]
         }
+
+    def to_json(self) -> str:
+        """Converte o objeto para formato JSON"""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
     def from_dict(self):
         return NotificationDto(
             id=self.id,
@@ -97,9 +116,34 @@ class NotificationDto:
 
     @staticmethod
     def from_domain(notification: 'Notification') -> 'NotificationDto':
+        # Converter conteúdos do domínio para DTOs
+        content_dtos = []
+        for content in notification.content:
+            email_dto = None
+            web_dto = None
+
+            if content.email:
+                email_dto = EmailPayloadDto(
+                    user_id=content.email.user_id,
+                    template=content.email.template
+                )
+
+            if content.web:
+                web_dto = WebPayloadDto(
+                    user_id=content.web.user_id,
+                    message=content.web.message,
+                    timestamp=content.web.timestamp,
+                    is_read=content.web.is_read
+                )
+
+            content_dtos.append(NotificationContentDto(email=email_dto, web=web_dto))
+
+        # Converter VdscMetadata domain para VdscMetadataDTO usando o método from_domain
+        metadata_dto = VdscMetadataDTO.from_domain(notification.metadata)
+
         return NotificationDto(
             id=str(notification.id),
             channels=notification.channels,
-            metadata=notification.metadata,
-            content=notification.content
+            metadata=metadata_dto,
+            content=content_dtos
         )

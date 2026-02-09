@@ -344,3 +344,117 @@ class TestVdscMetadataDTO:
         with pytest.raises(ValueError, match="info"):
             log.validate()
 
+    def test_from_domain_converts_metadata_successfully(self):
+        """Testa conversão de VdscMetadata domain para VdscMetadataDTO"""
+        from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+        from core.domain.vdsc_metadata import VdscMetadata
+
+        # Criar DTO base
+        base_dto = VdscMetadataDTO(
+            video_id="video_from_domain",
+            file_name="test_domain.mp4",
+            extension_file="mp4",
+            status="uploaded",
+            created="2026-01-13T00:00:00Z",
+            user_id="user_domain",
+            total_time=3600,
+            unit_time="s",
+            start_time=0,
+            end_time=60,
+            time_interval=["00:00:00", "00:01:00"],
+            max_retry=3,
+            retries=0,
+            quality="high",
+            logs=[]
+        )
+
+        # Criar domain object
+        domain_metadata = VdscMetadata(dto=base_dto)
+        domain_metadata.add_log("Log teste 1")
+        domain_metadata.add_log("Log teste 2")
+
+        # Converter de volta para DTO usando from_domain
+        result_dto = VdscMetadataDTO.from_domain(domain_metadata)
+
+        assert result_dto.video_id == "video_from_domain"
+        assert result_dto.file_name == "test_domain.mp4"
+        assert result_dto.total_time == 3600
+        assert len(result_dto.logs) == 2
+        assert result_dto.logs[0].info == "Log teste 1"
+        assert result_dto.logs[1].info == "Log teste 2"
+
+    def test_from_domain_preserves_all_fields(self):
+        """Testa que from_domain preserva todos os campos do domain"""
+        from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+        from core.domain.vdsc_metadata import VdscMetadata
+
+        base_dto = VdscMetadataDTO(
+            video_id="video123",
+            file_name="complete_test.mp4",
+            extension_file="mp4",
+            status="processing",
+            created="2026-02-09T10:30:00Z",
+            user_id="user456",
+            total_time=7200,
+            unit_time="s",
+            start_time=100,
+            end_time=200,
+            time_interval=["00:01:40", "00:03:20"],
+            max_retry=5,
+            retries=2,
+            quality="medium",
+            logs=[]
+        )
+
+        domain_metadata = VdscMetadata(dto=base_dto)
+        result_dto = VdscMetadataDTO.from_domain(domain_metadata)
+
+        assert result_dto.video_id == base_dto.video_id
+        assert result_dto.file_name == base_dto.file_name
+        assert result_dto.extension_file == base_dto.extension_file
+        assert result_dto.status == base_dto.status
+        assert result_dto.created == base_dto.created
+        assert result_dto.user_id == base_dto.user_id
+        assert result_dto.total_time == base_dto.total_time
+        assert result_dto.unit_time == base_dto.unit_time
+        assert result_dto.start_time == base_dto.start_time
+        assert result_dto.end_time == base_dto.end_time
+        assert result_dto.time_interval == base_dto.time_interval
+        assert result_dto.max_retry == base_dto.max_retry
+        assert result_dto.retries == base_dto.retries
+        assert result_dto.quality == base_dto.quality
+
+    def test_from_domain_with_multiple_logs(self):
+        """Testa from_domain com múltiplos logs"""
+        from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+        from core.domain.vdsc_metadata import VdscMetadata
+
+        base_dto = VdscMetadataDTO(
+            video_id="video_logs",
+            file_name="logs_test.mp4",
+            extension_file="mp4",
+            status="uploaded",
+            created="2026-02-09T10:00:00Z",
+            user_id="user_logs",
+            total_time=1800,
+            unit_time="s",
+            start_time=0,
+            end_time=30,
+            time_interval=["00:00:00", "00:00:30"],
+            max_retry=3,
+            retries=0,
+            quality="high",
+            logs=[]
+        )
+
+        domain_metadata = VdscMetadata(dto=base_dto)
+        domain_metadata.mark_as_uploaded()
+        domain_metadata.mark_as_processing()
+        domain_metadata.mark_as_finished()
+
+        result_dto = VdscMetadataDTO.from_domain(domain_metadata)
+
+        assert len(result_dto.logs) == 3
+        assert all(isinstance(log, LogEntryDTO) for log in result_dto.logs)
+        assert all(log.timestamp for log in result_dto.logs)
+        assert all(log.info for log in result_dto.logs)

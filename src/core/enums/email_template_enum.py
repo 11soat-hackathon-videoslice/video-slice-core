@@ -1,7 +1,7 @@
 from enum import Enum, auto
 
 
-class EmailTemplateEnum(Enum):
+class EmailTemplateEnum(str,Enum):
     UPDATE_STATUS = auto()
     FAILED = auto()
     FINISHED = auto()

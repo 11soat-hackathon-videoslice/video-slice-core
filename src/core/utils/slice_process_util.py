@@ -57,8 +57,8 @@ def create_interval_list(vdsc_metadata, time_unit_multiplier):
     return time_interval_list
 
 def create_notification(metadata: VdscMetadata, channels: list[str],
-                        web_message: Optional[str],
-                        email_template: Optional[EmailTemplateEnum]) -> Notification:
+                        web_message: Optional[str] = None,
+                        email_template: Optional[EmailTemplateEnum] = None) -> Notification:
     """Cria notificação com payloads de email e web"""
     content = []
     # Cria conteúdo apenas se houver dados

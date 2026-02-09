@@ -1,4 +1,5 @@
 """Testes unitários para NotificationDto"""
+import json
 import pytest
 from datetime import datetime, UTC
 from uuid import uuid4
@@ -37,6 +38,17 @@ class TestEmailPayloadDto:
         result = email_payload.to_dict()
         assert result["user_id"] == "user456"
         assert result["template"] == "FINISHED"
+
+    def test_email_payload_converted_to_json_successfully(self):
+        email_payload = EmailPayloadDto(
+            user_id="user123",
+            template=EmailTemplateEnum.UPDATE_STATUS
+        )
+        result = email_payload.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["user_id"] == "user123"
+        assert parsed["template"] == "UPDATE_STATUS"
 
 
 @pytest.mark.unit
@@ -80,6 +92,22 @@ class TestWebPayloadDto:
         )
         result = web_payload.to_dict()
         assert result["is_read"] is False
+
+    def test_web_payload_converted_to_json_successfully(self):
+        timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
+        web_payload = WebPayloadDto(
+            user_id="user123",
+            message="Processamento concluído",
+            timestamp=timestamp,
+            is_read=False
+        )
+        result = web_payload.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["user_id"] == "user123"
+        assert parsed["message"] == "Processamento concluído"
+        assert parsed["timestamp"] == "2026-02-08T12:00:00+00:00"
+        assert parsed["is_read"] is False
 
 
 @pytest.mark.unit
@@ -155,6 +183,40 @@ class TestNotificationContentDto:
         result = content.to_dict()
         assert result["email"] is None
         assert result["web"] is None
+
+    def test_notification_content_with_email_converted_to_json_successfully(self):
+        email = EmailPayloadDto(
+            user_id="user123",
+            template=EmailTemplateEnum.UPDATE_STATUS
+        )
+        content = NotificationContentDto(email=email)
+        result = content.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["email"] is not None
+        assert parsed["email"]["user_id"] == "user123"
+        assert parsed["web"] is None
+
+    def test_notification_content_with_both_payloads_converted_to_json_successfully(self):
+        email = EmailPayloadDto(
+            user_id="user123",
+            template=EmailTemplateEnum.FINISHED
+        )
+        timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
+        web = WebPayloadDto(
+            user_id="user123",
+            message="Concluído",
+            timestamp=timestamp,
+            is_read=False
+        )
+        content = NotificationContentDto(email=email, web=web)
+        result = content.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["email"] is not None
+        assert parsed["email"]["user_id"] == "user123"
+        assert parsed["web"] is not None
+        assert parsed["web"]["message"] == "Concluído"
 
 
 @pytest.mark.unit
@@ -309,4 +371,54 @@ class TestNotificationDto:
         )
         result = notification.to_dict()
         assert len(result["content"]) == 2
+
+    def test_notification_converted_to_json_successfully(self, valid_metadata_dto):
+        email = EmailPayloadDto(
+            user_id="user123",
+            template=EmailTemplateEnum.UPDATE_STATUS
+        )
+        content = NotificationContentDto(email=email)
+        notification_id = str(uuid4())
+        notification = NotificationDto(
+            id=notification_id,
+            channels=[NotificationChannelsEnum.EMAIL],
+            metadata=valid_metadata_dto,
+            content=[content]
+        )
+        result = notification.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert parsed["id"] == notification_id
+        assert "EMAIL" in parsed["channels"]
+        assert parsed["metadata"] is not None
+        assert len(parsed["content"]) == 1
+        assert parsed["content"][0]["email"]["user_id"] == "user123"
+
+    def test_notification_with_multiple_channels_converted_to_json_successfully(self, valid_metadata_dto):
+        email = EmailPayloadDto(
+            user_id="user123",
+            template=EmailTemplateEnum.FINISHED
+        )
+        timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
+        web = WebPayloadDto(
+            user_id="user123",
+            message="Concluído",
+            timestamp=timestamp,
+            is_read=False
+        )
+        content = NotificationContentDto(email=email, web=web)
+        notification = NotificationDto(
+            id=str(uuid4()),
+            channels=[NotificationChannelsEnum.EMAIL, NotificationChannelsEnum.WEB],
+            metadata=valid_metadata_dto,
+            content=[content]
+        )
+        result = notification.to_json()
+        assert isinstance(result, str)
+        parsed = json.loads(result)
+        assert len(parsed["channels"]) == 2
+        assert "EMAIL" in parsed["channels"]
+        assert "WEB" in parsed["channels"]
+        assert parsed["content"][0]["email"] is not None
+        assert parsed["content"][0]["web"] is not None
 
