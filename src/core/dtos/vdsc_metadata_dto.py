@@ -175,6 +175,7 @@ class VdscMetadataDTO:
 
         logs_dtos = [
             LogEntryDTO(timestamp=log.timestamp, info=log.info) if isinstance(log, LogEntry)
+            else log if isinstance(log, LogEntryDTO)
             else LogEntryDTO(timestamp=log['timestamp'], info=log['info'])
             for log in metadata.logs
         ]
