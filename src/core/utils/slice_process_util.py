@@ -69,7 +69,7 @@ def create_notification(metadata: VdscMetadata, channels: list[str],
         ))
 
     return Notification(
-        id=uuid4().hex,
+        id=uuid4(),
         metadata=metadata,
         channels=[NotificationChannelsEnum[ch.upper()] for ch in channels],
         content=content
