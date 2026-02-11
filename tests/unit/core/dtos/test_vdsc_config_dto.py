@@ -136,6 +136,49 @@ class TestScheduleRulesDTO:
         assert rules.retry_role_arn == ""
         assert rules.retry_dlq == ""
 
+    def test_to_dict_with_all_attributes(self):
+        # Arrange
+        dto = ScheduleRulesDTO(
+            retry_backoff_factor=2,
+            retry_arn="arn:aws:events:us-east-1:123456789012:rule/retry-rule",
+            retry_role_arn="arn:aws:iam::123456789012:role/retry-role",
+            retry_dlq="arn:aws:sqs:us-east-1:123456789012:retry-dlq"
+        )
+
+        # Act
+        result = dto.to_dict()
+
+        # Assert
+        expected = {
+            'retry_backoff_factor': 2,
+            'retry_arn': "arn:aws:events:us-east-1:123456789012:rule/retry-rule",
+            'retry_role_arn': "arn:aws:iam::123456789012:role/retry-role",
+            'retry_dlq': "arn:aws:sqs:us-east-1:123456789012:retry-dlq"
+        }
+        assert result == expected
+        assert isinstance(result, dict)
+
+    def test_to_dict_without_all_attributes(self):
+        # Arrange
+        dto = ScheduleRulesDTO(
+            retry_backoff_factor=0,
+            retry_arn="",
+            retry_role_arn="",
+            retry_dlq=""
+        )
+
+        # Act
+        result = dto.to_dict()
+
+        # Assert
+        expected = {
+            'retry_backoff_factor': 0,
+            'retry_arn': "",
+            'retry_role_arn': "",
+            'retry_dlq': ""
+        }
+        assert result == expected
+
 
 @pytest.mark.unit
 class TestVdscSettingsDTO:

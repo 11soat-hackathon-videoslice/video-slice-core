@@ -14,6 +14,14 @@ class ScheduleRulesDTO:
     retry_role_arn: str
     retry_dlq: str
 
+    def to_dict(self):
+        return {
+            'retry_backoff_factor': self.retry_backoff_factor,
+            'retry_arn': self.retry_arn,
+            'retry_role_arn': self.retry_role_arn,
+            'retry_dlq': self.retry_dlq
+        }
+
 @dataclass(frozen=True)
 class VdscSettingsDTO:
     png_compression_level: int

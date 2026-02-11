@@ -258,7 +258,7 @@ def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception,
     message = f"Falha no processamento do video {vdsc_metadata.video_id}: {str(ex)}. Iniciando tentativa {retries+1} de {max_retries}."
     vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(message))
     schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
-    gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules)
+    gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules.to_dict())
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.UPDATE_STATUS))
     return vdsc_metadata, message
 
