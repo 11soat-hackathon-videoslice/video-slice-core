@@ -2,9 +2,14 @@
 import pytest
 import io
 import zipfile
+import sys
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 from uuid import UUID
+
+# Mock cv2 to avoid import issues
+sys.modules['cv2'] = MagicMock()
+
 from core.utils.slice_process_util import (
     compress_images_to_zip,
     create_temporary_file,
@@ -18,9 +23,10 @@ from core.utils.slice_process_util import (
     get_path_directory,
     get_recurrent_time_intervals,
     get_specific_time_intervals,
-    get_frame_widths,
+    get_frame_new_size,
     metadata_update_status,
-    process_video_frames,
+    process_video,
+    process_video_frame,
     set_exception_status,
     set_exception_status_failed,
     set_exception_status_retrying,
@@ -80,6 +86,7 @@ class TestSliceProcessUtil:
         vdsc_settings_mock = MagicMock()
         vdsc_settings_mock.zip_compression_level = 6
         vdsc_settings_mock.png_compression_level = 3
+        vdsc_settings_mock.max_workers = 4
         vdsc_settings_mock.quality = quality_mock
         vdsc_settings_mock.schedule_event_rules = schedule_rules_mock
 
@@ -197,24 +204,25 @@ class TestSliceProcessUtil:
         assert os.path.exists(result)
         os.remove(result)
 
-    def test_get_frame_widths(self):
-        """Testa cálculo de largura de frame"""
+    def test_get_frame_new_size(self):
+        """Testa cálculo de novo tamanho de frame"""
         import numpy as np
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        result, original = get_frame_widths(frame, 720)
+        new_width, new_height = get_frame_new_size(frame, 720)
 
-        assert result == 1280
-        assert original == 1920
+        assert new_width == 1280
+        assert new_height == 720
 
-    def test_get_frame_widths_no_resize_needed(self):
+    def test_get_frame_new_size_no_resize_needed(self):
         """Testa quando frame já está no tamanho correto"""
         import numpy as np
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        result, original = get_frame_widths(frame, 1080)
+        new_width, new_height = get_frame_new_size(frame, 1080)
 
-        assert result == original
+        assert new_width == 1920
+        assert new_height == 1080
 
     def test_frame_resize(self):
         """Testa redimensionamento de frame"""
@@ -264,7 +272,7 @@ class TestSliceProcessUtil:
 
         mock_gateway.save_file.assert_called_once()
 
-    @patch('cv2.VideoCapture')
+    @patch('core.utils.slice_process_util.cv2.VideoCapture')
     def test_process_video_frames_success(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
         """Testa processamento de frames de vídeo com sucesso"""
         import numpy as np
@@ -280,11 +288,11 @@ class TestSliceProcessUtil:
         metadata.start_time = 0
         metadata.end_time = 5
 
-        process_video_frames("video123", metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
+        process_video(metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
 
         assert mock_gateway.save_file.called
 
-    @patch('cv2.VideoCapture')
+    @patch('core.utils.slice_process_util.cv2.VideoCapture')
     def test_process_video_frames_failure(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
         """Testa processamento de frames com falha na leitura"""
         # Mock do video capture com falha
@@ -294,8 +302,10 @@ class TestSliceProcessUtil:
 
         metadata = VdscMetadata(dto=valid_event_dto)
         metadata.time_interval = [1]
+        metadata.quality = "none"  # To avoid resize check
+        mock_config.vdsc.quality.none = None  # Make getattr return None
 
-        process_video_frames("video123", metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
+        process_video(metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
 
         # Não deve salvar arquivo se leitura falhar
         assert not mock_gateway.save_file.called
@@ -439,3 +449,63 @@ class TestSliceProcessUtil:
         with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):
             create_notification(metadata, ['email'], None, None)
 
+    @patch('core.utils.slice_process_util.cv2.VideoCapture')
+    def test_process_video_frame_success_with_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
+        """Testa processamento de um frame com sucesso e redimensionamento"""
+        import numpy as np
+        import threading
+
+        # Mock do video capture
+        mock_cap = MagicMock()
+        mock_video_capture.return_value = mock_cap
+        mock_cap.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
+
+        metadata = VdscMetadata(dto=valid_event_dto)
+        process_lock = threading.Lock()
+
+        result = process_video_frame(
+            1000, mock_cap, True, 1280, 720, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+        )
+
+        assert "Sucesso" in result
+        assert mock_gateway.save_file.called
+
+    @patch('core.utils.slice_process_util.cv2.VideoCapture')
+    def test_process_video_frame_success_without_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
+        """Testa processamento de um frame com sucesso sem redimensionamento"""
+        import numpy as np
+        import threading
+
+        # Mock do video capture
+        mock_cap = MagicMock()
+        mock_video_capture.return_value = mock_cap
+        mock_cap.read.return_value = (True, np.zeros((720, 1280, 3), dtype=np.uint8))
+
+        metadata = VdscMetadata(dto=valid_event_dto)
+        process_lock = threading.Lock()
+
+        result = process_video_frame(
+            1000, mock_cap, False, None, None, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+        )
+
+        assert "Sucesso" in result
+        assert mock_gateway.save_file.called
+
+    @patch('core.utils.slice_process_util.cv2.VideoCapture')
+    def test_process_video_frame_failure_read(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
+        """Testa processamento de um frame com falha na leitura"""
+        import threading
+        # Mock do video capture com falha
+        mock_cap = MagicMock()
+        mock_video_capture.return_value = mock_cap
+        mock_cap.read.return_value = (False, None)
+
+        metadata = VdscMetadata(dto=valid_event_dto)
+        process_lock = threading.Lock()
+
+        result = process_video_frame(
+            1000, mock_cap, False, None, None, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+        )
+
+        assert "Erro" in result
+        assert not mock_gateway.save_file.called

@@ -204,12 +204,14 @@ class TestVdscSettingsDTO:
         settings = VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
         assert settings.png_compression_level == 3
         assert settings.zip_compression_level == 6
+        assert settings.max_workers ==  10
         assert settings.quality == quality_dto
         assert settings.schedule_event_rules == schedule_rules_dto
 
@@ -218,6 +220,7 @@ class TestVdscSettingsDTO:
         settings = VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
@@ -231,18 +234,21 @@ class TestVdscSettingsDTO:
         settings1 = VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
         settings2 = VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
         settings3 = VdscSettingsDTO(
             png_compression_level=5,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
@@ -255,6 +261,7 @@ class TestVdscSettingsDTO:
         settings = VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
@@ -371,6 +378,7 @@ class TestVdscConfigDTO:
         return VdscSettingsDTO(
             png_compression_level=3,
             zip_compression_level=6,
+            max_workers=10,
             quality=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
@@ -487,6 +495,7 @@ class TestVdscConfigDTO:
             vdsc=VdscSettingsDTO(
                 png_compression_level=3,
                 zip_compression_level=6,
+                max_workers=10,
                 quality=QualityDTO(
                     ultra=2160,
                     high=1080,
@@ -546,6 +555,7 @@ class TestVdscConfigDTOIntegration:
             vdsc=VdscSettingsDTO(
                 png_compression_level=3,
                 zip_compression_level=6,
+                max_workers=10,
                 quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
@@ -562,6 +572,7 @@ class TestVdscConfigDTOIntegration:
         assert config.s3_bucket.dir_uploads == "uploads/"
         assert config.vdsc.png_compression_level == 3
         assert config.vdsc.zip_compression_level == 6
+        assert config.vdsc.max_workers == 10
         assert config.vdsc.quality.ultra == 2160
         assert config.vdsc.quality.high == 1080
         assert config.vdsc.quality.medium == 720
@@ -584,6 +595,7 @@ class TestVdscConfigDTOIntegration:
             vdsc=VdscSettingsDTO(
                 png_compression_level=3,
                 zip_compression_level=6,
+                max_workers=10,
                 quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
@@ -609,6 +621,10 @@ class TestVdscConfigDTOIntegration:
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
+            config.vdsc.max_workers = 5  # type: ignore
+
+        with pytest.raises(AttributeError):
+            # noinspection PyDataclass
             config.vdsc.quality.high = 1920  # type: ignore
 
         with pytest.raises(AttributeError):
@@ -630,6 +646,7 @@ class TestVdscConfigDTOIntegration:
             vdsc=VdscSettingsDTO(
                 png_compression_level=3,
                 zip_compression_level=6,
+                max_workers=10,
                 quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
@@ -653,6 +670,7 @@ class TestVdscConfigDTOIntegration:
             vdsc=VdscSettingsDTO(
                 png_compression_level=5,
                 zip_compression_level=9,
+                max_workers=10,
                 quality=QualityDTO(ultra=1920, high=720, medium=480, low=360),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=3,

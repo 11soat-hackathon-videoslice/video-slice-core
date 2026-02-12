@@ -12,7 +12,7 @@ from ..utils.slice_process_util import (
     compress_images_to_zip,
     get_path_file,
     get_path_directory,
-    process_video_frames,
+    process_video,
     metadata_update_status,
     set_exception_status,
     create_notification,
@@ -34,16 +34,17 @@ class SliceProcessUseCase:
         retries = vdsc_metadata.retries
         max_retries = vdsc_metadata.max_retry
         extension_file = vdsc_metadata.extension_file
+        video_name = vdsc_metadata.file_name
         log_message = None
         try:
             # Atualizando status de metadados para Processing ou Retrying
             if vdsc_metadata.status.upper() == VdscStatusEnum.UPLOADED.value.upper():
-                log_message=f"Iniciando processamento do vídeo: {video_id}."
+                log_message=f"{video_id} - Iniciando processamento do vídeo {video_name}"
                 vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.PROCESSING, LogEntry(log_message))
             elif vdsc_metadata.status.upper() == VdscStatusEnum.RETRYING.value.upper():
                 retries += 1
                 vdsc_metadata.retries = retries
-                log_message = f"Reiniciando processamento do vídeo: {video_id}. Tentativa {retries} de {max_retries}."
+                log_message = f"{video_id} - Reiniciando processamento do vídeo: {video_name}. Tentativa {retries} de {max_retries}."
                 vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.RETRYING, LogEntry(log_message))
             gateway.update_metadata(vdsc_metadata)
             gateway.send_notification(create_notification(vdsc_metadata,['web','email'], log_message, EmailTemplateEnum.UPDATE_STATUS))
@@ -62,7 +63,7 @@ class SliceProcessUseCase:
 
             #Processamento de caputura de frames
             logger.info(f"Iniciando captura de imagens para o vídeo ID: {event.video_id}")
-            process_video_frames(video_id, vdsc_metadata, video_data, video_output_directory, gateway, config)
+            process_video(vdsc_metadata, video_data, video_output_directory, gateway, config)
             logger.info(f"Finalizada captura de imagens para o vídeo ID: {event.video_id})")
 
             #Compactando arquivos para zip
@@ -76,7 +77,7 @@ class SliceProcessUseCase:
             gateway.delete_file(file_processing_path)
 
             #Atualizando metadados para finalizado
-            log_message = f"Processamento do vídeo {video_id} finalizado com sucesso."
+            log_message = f" {video_id} - Processamento do vídeo {video_name} finalizado com sucesso."
             vdsc_metadata = metadata_update_status(vdsc_metadata, VdscStatusEnum.FINISHED, LogEntry(log_message))
             gateway.update_metadata(vdsc_metadata)
             gateway.send_notification(create_notification(vdsc_metadata,['web','email'], log_message, EmailTemplateEnum.FINISHED))
@@ -85,7 +86,7 @@ class SliceProcessUseCase:
             logger.info(f"Processamento concluído com sucesso para o vídeo ID: {event.video_id}")
 
         except Exception as ex:
-            logger.error(f"Erro ao processar o vídeo ID {event.video_id}: {str(ex)}", exc_info=ex)
+            logger.error(f"{video_id} - Erro ao processar o vídeo {video_name}: {str(ex)}", exc_info=ex)
             if retries == max_retries:
                 vdsc_metadata_error, message = set_exception_status(gateway, ex, vdsc_metadata, VdscStatusEnum.FAILED, config)
 

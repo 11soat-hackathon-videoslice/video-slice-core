@@ -55,6 +55,7 @@ class TestSliceProcessUseCase:
         vdsc_settings_mock = MagicMock()
         vdsc_settings_mock.zip_compression_level = 6
         vdsc_settings_mock.png_compression_level = 3
+        vdsc_settings_mock.max_workers = 10
         vdsc_settings_mock.quality = quality_mock
         vdsc_settings_mock.schedule_event_rules = schedule_rules_mock
 
@@ -133,7 +134,7 @@ class TestSliceProcessUseCase:
         with pytest.raises(VdscException) as exc_info:
             use_case.execute(mock_gateway, valid_event_dto, mock_config, mock_handler)
 
-        assert "Falha no processamento do video video123" in str(exc_info.value)
+        assert "video123 - Falha no processamento do video test_video.mp4.mp4" in str(exc_info.value)
         assert mock_gateway.send_schedule_retry_event.called
 
     def test_execute_with_error_max_retries_reached(self, use_case, mock_gateway, mock_config, valid_event_dto, mock_handler):
@@ -145,4 +146,4 @@ class TestSliceProcessUseCase:
         with pytest.raises(VdscException) as exc_info:
             use_case.execute(mock_gateway, valid_event_dto, mock_config, mock_handler)
 
-        assert "Processamento do video video123 falhou após 3 tentativas" in str(exc_info.value)
+        assert " video123 - Processamento do video test_video.mp4.mp4 falhou após 3 tentativas" in str(exc_info.value)

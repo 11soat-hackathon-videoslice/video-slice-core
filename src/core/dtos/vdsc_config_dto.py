@@ -26,6 +26,7 @@ class ScheduleRulesDTO:
 class VdscSettingsDTO:
     png_compression_level: int
     zip_compression_level: int
+    max_workers: int
     quality: QualityDTO
     schedule_event_rules: ScheduleRulesDTO
 
