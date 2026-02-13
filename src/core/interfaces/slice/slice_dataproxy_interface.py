@@ -7,23 +7,14 @@ from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 class SliceDataProxyInterface(ABC):
 
     @abstractmethod
-    def create_directory(self, directory_path: str) -> None:
+    def create_zip_file(self, directory_path: str, zip_file_path: str) -> None:
         pass
 
     @abstractmethod
     def delete_file(self, file_path: str) -> None:
         pass
 
-    @abstractmethod
-    def delete_files_by_directory(self, directory_path: str) -> None:
-        pass
-
-    @abstractmethod
-    def get_list_paths_by_directory(self, directory_path: str) -> list[str]:
-        pass
-
-    @abstractmethod
-    def move_file(self, source_path: str, destination_path: str) -> None:
+    def delete_temp_files(self, tmp_path:str) -> None:
         pass
 
     @abstractmethod
@@ -44,5 +35,9 @@ class SliceDataProxyInterface(ABC):
 
     @abstractmethod
     def update_metadata_by_video_id(self, update_data: VdscMetadataDTO) -> VdscMetadataDTO:
+        pass
+
+    @abstractmethod
+    def upload_zip_file(self, source_path: str, target_path: str) -> None:
         pass
 

@@ -7,7 +7,7 @@ from core.domain.vdsc_metadata import VdscMetadata
 class SliceGatewayInferface(ABC):
 
     @abstractmethod
-    def create_directory(self, directory_path: str) -> None:
+    def create_zip_file(self, directory_path: str, zip_file_path: str) -> None:
         pass
 
     @abstractmethod
@@ -15,15 +15,7 @@ class SliceGatewayInferface(ABC):
         pass
 
     @abstractmethod
-    def delete_files_by_directory(self, directory_path: str) -> None:
-        pass
-
-    @abstractmethod
-    def get_list_paths_by_directory(self, directory_path: str) -> list[str]:
-        pass
-
-    @abstractmethod
-    def move_file(self, source_path: str, destination_path: str) -> None:
+    def delete_temp_files(self, tmp_path:str) -> None:
         pass
 
     @abstractmethod
@@ -46,6 +38,9 @@ class SliceGatewayInferface(ABC):
     def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
         pass
 
+    @abstractmethod
+    def upload_zip_file(self, directory_path: str, zip_file_path: str) -> None:
+        pass
 
 
 

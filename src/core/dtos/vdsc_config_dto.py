@@ -13,7 +13,6 @@ class ScheduleRulesDTO:
     retry_arn: str
     retry_role_arn: str
     retry_dlq: str
-
     def to_dict(self):
         return {
             'retry_backoff_factor': self.retry_backoff_factor,
@@ -24,24 +23,19 @@ class ScheduleRulesDTO:
 
 @dataclass(frozen=True)
 class VdscSettingsDTO:
-    png_compression_level: int
-    zip_compression_level: int
-    max_workers: int
-    quality: QualityDTO
-    schedule_event_rules: ScheduleRulesDTO
-
-@dataclass(frozen=True)
-class S3ConfigDTO:
-    bucket_name: str
     dir_uploads: str
     dir_finished: str
-    dir_processing: str
+    dir_tmp: str
+    max_workers: int
+    png_compression_level: int
+    quality: QualityDTO
+    schedule_event_rules: ScheduleRulesDTO
+    zip_compression_level: int
 
 @dataclass(frozen=True)
 class VdscConfigDTO:
     aws_region: str
+    s3_bucket_name: str
     dynamodb_table_name: str
     event_bus_name: str
-    s3_bucket: S3ConfigDTO
     vdsc: VdscSettingsDTO
-

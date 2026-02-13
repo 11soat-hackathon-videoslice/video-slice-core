@@ -4,10 +4,8 @@ from core.dtos.vdsc_config_dto import (
     QualityDTO,
     ScheduleRulesDTO,
     VdscSettingsDTO,
-    S3ConfigDTO,
     VdscConfigDTO
 )
-
 
 @pytest.mark.unit
 class TestQualityDTO:
@@ -199,9 +197,13 @@ class TestVdscSettingsDTO:
             retry_dlq="arn:aws:sqs:us-east-1:123456789012:queue/dlq"
         )
 
-    def test_create_vdsc_settings_dto(self, quality_dto, schedule_rules_dto):
-        """Testa criação de VdscSettingsDTO com valores válidos"""
-        settings = VdscSettingsDTO(
+    @pytest.fixture
+    def vdsc_settings_dto(self, quality_dto, schedule_rules_dto):
+        """Fixture com VdscSettingsDTO válido"""
+        return VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -209,6 +211,22 @@ class TestVdscSettingsDTO:
             schedule_event_rules=schedule_rules_dto
         )
 
+    def test_create_vdsc_settings_dto(self, quality_dto, schedule_rules_dto):
+        """Testa criação de VdscSettingsDTO com valores válidos"""
+        settings = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
+            png_compression_level=3,
+            zip_compression_level=6,
+            max_workers=10,
+            quality=quality_dto,
+            schedule_event_rules=schedule_rules_dto
+        )
+
+        assert settings.dir_uploads == "uploads/"
+        assert settings.dir_finished == "finished/"
+        assert settings.dir_tmp == "tmp/"
         assert settings.png_compression_level == 3
         assert settings.zip_compression_level == 6
         assert settings.max_workers ==  10
@@ -218,6 +236,9 @@ class TestVdscSettingsDTO:
     def test_vdsc_settings_dto_is_immutable(self, quality_dto, schedule_rules_dto):
         """Testa que VdscSettingsDTO é imutável (frozen)"""
         settings = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -232,6 +253,9 @@ class TestVdscSettingsDTO:
     def test_vdsc_settings_dto_equality(self, quality_dto, schedule_rules_dto):
         """Testa comparação de igualdade entre instâncias"""
         settings1 = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -239,6 +263,9 @@ class TestVdscSettingsDTO:
             schedule_event_rules=schedule_rules_dto
         )
         settings2 = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -246,6 +273,9 @@ class TestVdscSettingsDTO:
             schedule_event_rules=schedule_rules_dto
         )
         settings3 = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=5,
             zip_compression_level=6,
             max_workers=10,
@@ -259,6 +289,9 @@ class TestVdscSettingsDTO:
     def test_vdsc_settings_dto_access_nested_properties(self, quality_dto, schedule_rules_dto):
         """Testa acesso a propriedades aninhadas"""
         settings = VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -269,88 +302,6 @@ class TestVdscSettingsDTO:
         assert settings.quality.high == 1080
         assert settings.schedule_event_rules.retry_backoff_factor == 2
 
-
-@pytest.mark.unit
-class TestS3ConfigDTO:
-    """Testes para a classe S3ConfigDTO"""
-
-    def test_create_s3_config_dto(self):
-        """Testa criação de S3ConfigDTO com valores válidos"""
-        s3_config = S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-
-        assert s3_config.bucket_name == "my-video-bucket"
-        assert s3_config.dir_uploads == "uploads/"
-        assert s3_config.dir_finished == "finished/"
-        assert s3_config.dir_processing == "processing/"
-
-    def test_s3_config_dto_is_immutable(self):
-        """Testa que S3ConfigDTO é imutável (frozen)"""
-        s3_config = S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-
-        with pytest.raises(AttributeError):
-            # noinspection PyDataclass
-            s3_config.bucket_name = "other-bucket"
-
-    def test_s3_config_dto_equality(self):
-        """Testa comparação de igualdade entre instâncias"""
-        s3_config1 = S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-        s3_config2 = S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-        s3_config3 = S3ConfigDTO(
-            bucket_name="other-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-
-        assert s3_config1 == s3_config2
-        assert s3_config1 != s3_config3
-
-    def test_s3_config_dto_with_empty_strings(self):
-        """Testa criação com strings vazias"""
-        s3_config = S3ConfigDTO(
-            bucket_name="",
-            dir_uploads="",
-            dir_finished="",
-            dir_processing=""
-        )
-
-        assert s3_config.bucket_name == ""
-        assert s3_config.dir_uploads == ""
-        assert s3_config.dir_finished == ""
-        assert s3_config.dir_processing == ""
-
-    def test_s3_config_dto_without_trailing_slashes(self):
-        """Testa criação sem barras no final dos diretórios"""
-        s3_config = S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads",
-            dir_finished="finished",
-            dir_processing="processing"
-        )
-
-        assert s3_config.dir_uploads == "uploads"
-        assert s3_config.dir_finished == "finished"
-        assert s3_config.dir_processing == "processing"
 
 
 @pytest.mark.unit
@@ -376,6 +327,9 @@ class TestVdscConfigDTO:
     def vdsc_settings_dto(self, quality_dto, schedule_rules_dto):
         """Fixture com VdscSettingsDTO válido"""
         return VdscSettingsDTO(
+            dir_uploads="uploads/",
+            dir_finished="finished/",
+            dir_tmp="tmp/",
             png_compression_level=3,
             zip_compression_level=6,
             max_workers=10,
@@ -383,39 +337,29 @@ class TestVdscConfigDTO:
             schedule_event_rules=schedule_rules_dto
         )
 
-    @pytest.fixture
-    def s3_config_dto(self):
-        """Fixture com S3ConfigDTO válido"""
-        return S3ConfigDTO(
-            bucket_name="my-video-bucket",
-            dir_uploads="uploads/",
-            dir_finished="finished/",
-            dir_processing="processing/"
-        )
-
-    def test_create_vdsc_config_dto(self, s3_config_dto, vdsc_settings_dto):
+    def test_create_vdsc_config_dto(self, vdsc_settings_dto):
         """Testa criação de VdscConfigDTO com valores válidos"""
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
 
         assert config.aws_region == "us-east-1"
+        assert config.s3_bucket_name == "my-video-bucket"
         assert config.dynamodb_table_name == "VideoSlice"
         assert config.event_bus_name == "video-slice-events"
-        assert config.s3_bucket == s3_config_dto
         assert config.vdsc == vdsc_settings_dto
 
-    def test_vdsc_config_dto_is_immutable(self, s3_config_dto, vdsc_settings_dto):
+    def test_vdsc_config_dto_is_immutable(self, vdsc_settings_dto):
         """Testa que VdscConfigDTO é imutável (frozen)"""
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
 
@@ -423,59 +367,57 @@ class TestVdscConfigDTO:
             # noinspection PyDataclass
             config.aws_region = "us-west-2"  # type: ignore
 
-    def test_vdsc_config_dto_equality(self, s3_config_dto, vdsc_settings_dto):
+    def test_vdsc_config_dto_equality(self, vdsc_settings_dto):
         """Testa comparação de igualdade entre instâncias"""
         config1 = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
         config2 = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
         config3 = VdscConfigDTO(
             aws_region="us-west-2",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
 
         assert config1 == config2
         assert config1 != config3
 
-    def test_vdsc_config_dto_access_nested_properties(self, s3_config_dto, vdsc_settings_dto):
+    def test_vdsc_config_dto_access_nested_properties(self, vdsc_settings_dto):
         """Testa acesso a propriedades profundamente aninhadas"""
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
 
-        assert config.s3_bucket.bucket_name == "my-video-bucket"
-        assert config.s3_bucket.dir_uploads == "uploads/"
         assert config.vdsc.png_compression_level == 3
         assert config.vdsc.quality.high == 1080
         assert config.vdsc.schedule_event_rules.retry_backoff_factor == 2
 
-    def test_vdsc_config_dto_with_different_regions(self, s3_config_dto, vdsc_settings_dto):
+    def test_vdsc_config_dto_with_different_regions(self, vdsc_settings_dto):
         """Testa criação com diferentes regiões AWS"""
         regions = ["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"]
 
         for region in regions:
             config = VdscConfigDTO(
                 aws_region=region,
+                s3_bucket_name="my-video-bucket",
                 dynamodb_table_name="VideoSlice",
                 event_bus_name="video-slice-events",
-                s3_bucket=s3_config_dto,
                 vdsc=vdsc_settings_dto
             )
             assert config.aws_region == region
@@ -484,15 +426,13 @@ class TestVdscConfigDTO:
         """Testa criação completa de toda a hierarquia de DTOs"""
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-video-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=S3ConfigDTO(
-                bucket_name="my-video-bucket",
+            vdsc=VdscSettingsDTO(
                 dir_uploads="uploads/",
                 dir_finished="finished/",
-                dir_processing="processing/"
-            ),
-            vdsc=VdscSettingsDTO(
+                dir_tmp="tmp/",
                 png_compression_level=3,
                 zip_compression_level=6,
                 max_workers=10,
@@ -513,24 +453,25 @@ class TestVdscConfigDTO:
 
         # Verifica toda a estrutura
         assert config.aws_region == "us-east-1"
+        assert config.s3_bucket_name == "my-video-bucket"
         assert config.dynamodb_table_name == "VideoSlice"
         assert config.event_bus_name == "video-slice-events"
-        assert config.s3_bucket.bucket_name == "my-video-bucket"
         assert config.vdsc.png_compression_level == 3
         assert config.vdsc.quality.high == 1080
         assert config.vdsc.schedule_event_rules.retry_backoff_factor == 2
 
-    def test_vdsc_config_dto_with_empty_strings(self, s3_config_dto, vdsc_settings_dto):
+    def test_vdsc_config_dto_with_empty_strings(self, vdsc_settings_dto):
         """Testa criação com strings vazias"""
         config = VdscConfigDTO(
             aws_region="",
+            s3_bucket_name="",
             dynamodb_table_name="",
             event_bus_name="",
-            s3_bucket=s3_config_dto,
             vdsc=vdsc_settings_dto
         )
 
         assert config.aws_region == ""
+        assert config.s3_bucket_name == ""
         assert config.dynamodb_table_name == ""
         assert config.event_bus_name == ""
 
@@ -544,15 +485,13 @@ class TestVdscConfigDTOIntegration:
         # Cria configuração completa
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="vdsc-prd-s3-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=S3ConfigDTO(
-                bucket_name="vdsc-prd-s3-bucket",
+            vdsc=VdscSettingsDTO(
                 dir_uploads="uploads/",
                 dir_finished="finished/",
-                dir_processing="processing/"
-            ),
-            vdsc=VdscSettingsDTO(
+                dir_tmp="tmp/",
                 png_compression_level=3,
                 zip_compression_level=6,
                 max_workers=10,
@@ -568,8 +507,7 @@ class TestVdscConfigDTOIntegration:
 
         # Testa acesso a todos os níveis
         assert config.aws_region == "us-east-1"
-        assert config.s3_bucket.bucket_name == "vdsc-prd-s3-bucket"
-        assert config.s3_bucket.dir_uploads == "uploads/"
+        assert config.s3_bucket_name == "vdsc-prd-s3-bucket"
         assert config.vdsc.png_compression_level == 3
         assert config.vdsc.zip_compression_level == 6
         assert config.vdsc.max_workers == 10
@@ -584,15 +522,13 @@ class TestVdscConfigDTOIntegration:
         """Testa imutabilidade em todos os níveis da hierarquia"""
         config = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="my-bucket",
             dynamodb_table_name="VideoSlice",
             event_bus_name="video-slice-events",
-            s3_bucket=S3ConfigDTO(
-                bucket_name="my-bucket",
+            vdsc=VdscSettingsDTO(
                 dir_uploads="uploads/",
                 dir_finished="finished/",
-                dir_processing="processing/"
-            ),
-            vdsc=VdscSettingsDTO(
+                dir_tmp="tmp/",
                 png_compression_level=3,
                 zip_compression_level=6,
                 max_workers=10,
@@ -610,10 +546,6 @@ class TestVdscConfigDTOIntegration:
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
             config.aws_region = "us-west-2"  # type: ignore
-
-        with pytest.raises(AttributeError):
-            # noinspection PyDataclass
-            config.s3_bucket.bucket_name = "other-bucket"  # type: ignore
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
@@ -635,15 +567,13 @@ class TestVdscConfigDTOIntegration:
         """Testa que múltiplas configurações são independentes"""
         config1 = VdscConfigDTO(
             aws_region="us-east-1",
+            s3_bucket_name="bucket1",
             dynamodb_table_name="VideoSlice1",
             event_bus_name="events1",
-            s3_bucket=S3ConfigDTO(
-                bucket_name="bucket1",
-                dir_uploads="uploads1/",
-                dir_finished="finished1/",
-                dir_processing="processing1/"
-            ),
             vdsc=VdscSettingsDTO(
+                dir_uploads="uploads/",
+                dir_finished="finished/",
+                dir_tmp="tmp/",
                 png_compression_level=3,
                 zip_compression_level=6,
                 max_workers=10,
@@ -659,15 +589,13 @@ class TestVdscConfigDTOIntegration:
 
         config2 = VdscConfigDTO(
             aws_region="us-west-2",
+            s3_bucket_name="bucket2",
             dynamodb_table_name="VideoSlice2",
             event_bus_name="events2",
-            s3_bucket=S3ConfigDTO(
-                bucket_name="bucket2",
-                dir_uploads="uploads2/",
-                dir_finished="finished2/",
-                dir_processing="processing2/"
-            ),
             vdsc=VdscSettingsDTO(
+                dir_uploads="uploads/",
+                dir_finished="finished/",
+                dir_tmp="tmp/",
                 png_compression_level=5,
                 zip_compression_level=9,
                 max_workers=10,
@@ -683,7 +611,7 @@ class TestVdscConfigDTOIntegration:
 
         # Verifica que as configurações são independentes
         assert config1.aws_region != config2.aws_region
+        assert config1.s3_bucket_name != config2.s3_bucket_name
         assert config1.dynamodb_table_name != config2.dynamodb_table_name
-        assert config1.s3_bucket.bucket_name != config2.s3_bucket.bucket_name
         assert config1.vdsc.png_compression_level != config2.vdsc.png_compression_level
         assert config1.vdsc.quality.high != config2.vdsc.quality.high

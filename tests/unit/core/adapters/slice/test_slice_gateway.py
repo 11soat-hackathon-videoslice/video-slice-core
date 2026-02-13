@@ -50,43 +50,21 @@ class TestSliceGateway:
         """Testa inicialização do gateway"""
         assert gateway.dataproxy == mock_dataproxy
 
-    def test_create_directory(self, gateway, mock_dataproxy):
-        """Testa criação de diretório"""
-        gateway.create_directory("test/path/")
-        mock_dataproxy.create_directory.assert_called_once_with("test/path/")
-
     def test_delete_file(self, gateway, mock_dataproxy):
         """Testa deleção de arquivo"""
         gateway.delete_file("test/file.txt")
         mock_dataproxy.delete_file.assert_called_once_with("test/file.txt")
 
-    def test_delete_files_by_directory(self, gateway, mock_dataproxy):
-        """Testa deleção de arquivos por diretório"""
-        gateway.delete_files_by_directory("test/dir/")
-        mock_dataproxy.delete_files_by_directory.assert_called_once_with("test/dir/")
-
-    def test_get_list_paths_by_directory(self, gateway, mock_dataproxy):
-        """Testa obtenção de lista de caminhos"""
-        mock_dataproxy.get_list_paths_by_directory.return_value = ["file1.txt", "file2.txt"]
-        result = gateway.get_list_paths_by_directory("test/dir/")
-        assert result == ["file1.txt", "file2.txt"]
-        mock_dataproxy.get_list_paths_by_directory.assert_called_once_with("test/dir/")
-
-    def test_move_file(self, gateway, mock_dataproxy):
-        """Testa movimentação de arquivo"""
-        gateway.move_file("source.txt", "dest.txt")
-        mock_dataproxy.move_file.assert_called_once_with("source.txt", "dest.txt")
-
     def test_open_file(self, gateway, mock_dataproxy):
         """Testa abertura de arquivo"""
         mock_dataproxy.open_file.return_value = b"file content"
-        result = gateway.open_file("test/file.txt")
+        result = gateway.open_file(file_path="test/file.txt")
         assert result == b"file content"
         mock_dataproxy.open_file.assert_called_once_with("test/file.txt")
 
     def test_save_file(self, gateway, mock_dataproxy):
         """Testa salvamento de arquivo"""
-        gateway.save_file("test/file.txt", b"content")
+        gateway.save_file(file_path="test/file.txt", data=b"content")
         mock_dataproxy.save_file.assert_called_once_with("test/file.txt", b"content")
 
     def test_update_metadata_by_video_id(self, gateway, mock_dataproxy, valid_dto):

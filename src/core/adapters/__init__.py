@@ -1,15 +1,18 @@
-from .slice.slice_controller import SliceController
-from .url.url_controller import UrlController
-from .url.url_gateway import UrlGateway
-from .url.url_presenter import UrlPresenter
-from .notification.notification_controller import NotificationController
-from .notification.notification_gateway import NotificationGateway
+from core.adapters import notification
+from core.adapters import slice
+from core.adapters import url
 
-__all__ = [
-    'SliceController',
-    'UrlController',
-    'UrlGateway',
-    'UrlPresenter',
-    'NotificationController',
-    'NotificationGateway'
-]
+from core.adapters.notification import (NotificationController,
+                                            NotificationGateway,
+                                            notification_controller,
+                                            notification_gateway,)
+from core.adapters.slice import (SliceController, SliceGateway,
+                                     slice_controller, slice_gateway,)
+from core.adapters.url import (UrlController, UrlGateway, UrlPresenter,
+                                   url_controller, url_gateway, url_presenter,)
+
+__all__ = ['NotificationController', 'NotificationGateway', 'SliceController',
+           'SliceGateway', 'UrlController', 'UrlGateway', 'UrlPresenter',
+           'notification', 'notification_controller', 'notification_gateway',
+           'slice', 'slice_controller', 'slice_gateway', 'url',
+           'url_controller', 'url_gateway', 'url_presenter']

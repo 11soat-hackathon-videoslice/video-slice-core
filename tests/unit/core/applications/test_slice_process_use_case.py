@@ -119,13 +119,16 @@ class TestSliceProcessUseCase:
         def mock_update(metadata):
             return metadata
         mock_gateway.update_metadata.side_effect = mock_update
-        mock_gateway.get_list_paths_by_directory.return_value = []
+        mock_gateway.open_file.return_value = b"fake_video_data"
+        mock_gateway.upload_zip_file = Mock()
 
         use_case.execute(mock_gateway, valid_event_dto, mock_config, mock_handler)
 
         assert mock_gateway.update_metadata.called
-        assert mock_gateway.move_file.called
-        assert mock_gateway.create_directory.called
+        assert mock_gateway.open_file.called
+        assert mock_gateway.upload_zip_file.called
+        assert mock_gateway.delete_file.called
+        assert mock_gateway.send_notification.called
 
     def test_execute_with_error_retries_not_exceeded(self, use_case, mock_gateway, mock_config, valid_event_dto, mock_handler):
         """Testa execução com erro quando tentativas não foram excedidas"""

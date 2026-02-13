@@ -12,26 +12,23 @@ class SliceGateway(SliceGatewayInferface):
     def __init__(self, dataproxy: SliceDataProxyInterface):
         self.dataproxy = dataproxy
 
-    def create_directory(self, directory_path: str) -> None:
-        self.dataproxy.create_directory(directory_path)
+    def create_zip_file(self, directory_path: str, zip_file_path: str) -> None:
+        self.dataproxy.create_zip_file(directory_path, zip_file_path)
 
     def delete_file(self, file_path: str) -> None:
         self.dataproxy.delete_file(file_path)
 
-    def delete_files_by_directory(self, directory_path: str) -> None:
-        self.dataproxy.delete_files_by_directory(directory_path)
-
-    def get_list_paths_by_directory(self, directory_path: str) -> list[str]:
-        return self.dataproxy.get_list_paths_by_directory(directory_path)
-
-    def move_file(self, source_path: str, destination_path: str) -> None:
-        self.dataproxy.move_file(source_path, destination_path)
+    def delete_temp_files(self, tmp_path:str) -> None:
+        self.dataproxy.delete_temp_files(tmp_path)
 
     def open_file(self, file_path: str) -> bytes:
         return self.dataproxy.open_file(file_path)
 
-    def save_file(self, file_path: str, data: bytes) -> None:
+    def save_file(self, file_path: str, data: str) -> None:
         self.dataproxy.save_file(file_path, data)
+
+    def save_file_local(self, file_path: str, data: bytes) -> None:
+        self.dataproxy.save_file_local(file_path, data)
 
     def send_schedule_retry_event(self, vdsc_metadata: VdscMetadata, schedule_time: datetime, schedule_config: dict) -> None:
         event_metadata = VdscMetadataDTO.from_dict(vdsc_metadata.to_dict())
@@ -49,4 +46,8 @@ class SliceGateway(SliceGatewayInferface):
         updated_dto = self.dataproxy.update_metadata_by_video_id(update_data_dto)
         # Converter DTO de volta para entidade de domínio
         return VdscMetadata(dto=updated_dto)
+
+    def upload_zip_file(self, source_path: str, target_path: str) -> None:
+        self.dataproxy.upload_zip_file(source_path, target_path)
+
 

@@ -1,3 +1,5 @@
-from .vdsc_exceptions import VdscException
+from core.exceptions import vdsc_exceptions
 
-__all__ = ['VdscException']
+from core.exceptions.vdsc_exceptions import (VdscException,)
+
+__all__ = ['VdscException', 'vdsc_exceptions']

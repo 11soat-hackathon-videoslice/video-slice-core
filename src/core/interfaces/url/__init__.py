@@ -1,7 +1,8 @@
-from .url_interfaces import UrlGatewayInterface, UrlDataSourceInterface, UrlControllerInterface
+from core.interfaces.url import url_interfaces
 
-__all__ = [
-    "UrlControllerInterface",
-    "UrlDataSourceInterface",
-    "UrlGatewayInterface"
-]
+from core.interfaces.url.url_interfaces import (UrlControllerInterface,
+                                                    UrlDataSourceInterface,
+                                                    UrlGatewayInterface,)
+
+__all__ = ['UrlControllerInterface', 'UrlDataSourceInterface',
+           'UrlGatewayInterface', 'url_interfaces']

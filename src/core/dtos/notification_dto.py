@@ -1,11 +1,13 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from core.enums.email_template_enum import EmailTemplateEnum
 from core.enums.notification_channels_enum import NotificationChannelsEnum
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
-from core.domain.notification import Notification
+
+if TYPE_CHECKING:
+    from core.domain.notification import Notification
 
 @dataclass(frozen=True)
 class EmailPayloadDto:

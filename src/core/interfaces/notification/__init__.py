@@ -1,14 +1,9 @@
-from .notication_interfaces import (
-    NotificationGatewayInterface,
-    NotificationDatasourceInterface,
-    NotificationControllerInterface,
-    NotificationUseCaseInterface
-)
+from core.interfaces.notification import notication_interfaces
 
-__all__ = [
-    'NotificationGatewayInterface',
-    'NotificationDatasourceInterface',
-    'NotificationControllerInterface',
-    'NotificationUseCaseInterface'
-]
+from core.interfaces.notification.notication_interfaces import (
+    NotificationControllerInterface, NotificationDatasourceInterface,
+    NotificationGatewayInterface, NotificationUseCaseInterface,)
 
+__all__ = ['NotificationControllerInterface',
+           'NotificationDatasourceInterface', 'NotificationGatewayInterface',
+           'NotificationUseCaseInterface', 'notication_interfaces']

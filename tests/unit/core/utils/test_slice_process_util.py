@@ -11,7 +11,6 @@ from uuid import UUID
 sys.modules['cv2'] = MagicMock()
 
 from core.utils.slice_process_util import (
-    compress_images_to_zip,
     create_temporary_file,
     create_interval_list,
     create_zip_buffer,
@@ -28,8 +27,6 @@ from core.utils.slice_process_util import (
     process_video,
     process_video_frame,
     set_exception_status,
-    set_exception_status_failed,
-    set_exception_status_retrying,
     create_notification,
     create_email_notification,
     create_web_notification
@@ -84,25 +81,21 @@ class TestSliceProcessUtil:
 
         # Mock para VdscSettingsDTO
         vdsc_settings_mock = MagicMock()
+        vdsc_settings_mock.dir_uploads = "uploads"
+        vdsc_settings_mock.dir_finished = "finished"
+        vdsc_settings_mock.dir_tmp = "/tmp"
         vdsc_settings_mock.zip_compression_level = 6
         vdsc_settings_mock.png_compression_level = 3
         vdsc_settings_mock.max_workers = 4
         vdsc_settings_mock.quality = quality_mock
         vdsc_settings_mock.schedule_event_rules = schedule_rules_mock
 
-        # Mock para S3ConfigDTO
-        s3_config_mock = MagicMock()
-        s3_config_mock.bucket_name = "test-bucket"
-        s3_config_mock.dir_uploads = "uploads/"
-        s3_config_mock.dir_processing = "processing/"
-        s3_config_mock.dir_finished = "finished/"
-
         # Mock para VdscConfigDTO
         config = MagicMock(spec=VdscConfigDTO)
         config.aws_region = "us-east-1"
+        config.s3_bucket_name= "test-bucket"
         config.dynamodb_table_name = "VideoSlice"
         config.event_bus_name = "default"
-        config.s3_bucket = s3_config_mock
         config.vdsc = vdsc_settings_mock
 
         return config
@@ -130,13 +123,13 @@ class TestSliceProcessUtil:
 
     def test_get_path_file(self, mock_config):
         """Testa geração de caminho de arquivo"""
-        result = get_path_file("uploads/", "video123", "mp4")
+        result = get_path_file(mock_config.vdsc.dir_uploads, "video123", "mp4")
         assert result == "uploads/video123.mp4"
 
     def test_get_path_directory(self, mock_config):
         """Testa geração de caminho de diretório"""
-        result = get_path_directory("processing/", "video123")
-        assert result == "processing/video123/"
+        result = get_path_directory(mock_config.vdsc.dir_tmp, "video123")
+        assert result == "/tmp/video123/"
 
     def test_get_multiplier_time_unit_seconds(self):
         """Testa multiplicador para segundos"""
@@ -263,14 +256,6 @@ class TestSliceProcessUtil:
 
         assert result == [5000, 10000, 15000]
 
-    def test_compress_images_to_zip(self, mock_gateway, mock_config):
-        """Testa compactação de imagens para zip"""
-        mock_gateway.get_list_paths_by_directory.return_value = ["processing/video123/frame1.png"]
-        mock_gateway.open_file.return_value = b"fake_image_data"
-
-        compress_images_to_zip("processing/video123/", "finished/video123.zip", mock_gateway, mock_config)
-
-        mock_gateway.save_file.assert_called_once()
 
     @patch('core.utils.slice_process_util.cv2.VideoCapture')
     def test_process_video_frames_success(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
@@ -333,7 +318,7 @@ class TestSliceProcessUtil:
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
 
         assert result_metadata.status == VdscStatusEnum.RETRYING.value
-        assert "Iniciando tentativa 2 de 3" in message
+        assert "Criando tentativa 2 de 3" in message
         assert mock_gateway.send_schedule_retry_event.called
 
     def test_set_exception_status_failed_direct(self, mock_gateway, mock_config, valid_event_dto):
@@ -342,7 +327,7 @@ class TestSliceProcessUtil:
         metadata.max_retry = 3
         ex = Exception("Erro crítico")
 
-        result_metadata, message = set_exception_status_failed(mock_gateway, ex, metadata)
+        result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.FAILED, mock_config)
 
         assert result_metadata.status == VdscStatusEnum.FAILED.value
         assert "falhou após 3 tentativas" in message
@@ -357,10 +342,10 @@ class TestSliceProcessUtil:
         metadata.max_retry = 3
         ex = Exception("Erro temporário")
 
-        result_metadata, message = set_exception_status_retrying(mock_gateway, ex, metadata, mock_config)
+        result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
 
         assert result_metadata.status == VdscStatusEnum.RETRYING.value
-        assert "Iniciando tentativa 1 de 3" in message
+        assert "Criando tentativa 1 de 3" in message
         assert "Erro temporário" in message
         assert mock_gateway.send_schedule_retry_event.called
         assert mock_gateway.send_notification.called
@@ -445,7 +430,7 @@ class TestSliceProcessUtil:
         """Testa criação de notificação sem conteúdo deve falhar se canal requer payload"""
         metadata = VdscMetadata(dto=valid_event_dto)
 
-        # Deve lançar exceção pois canal EMAIL requer EmailPayload
+        # Deve lançar exceção, pois canal EMAIL requer EmailPayload
         with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):
             create_notification(metadata, ['email'], None, None)
 
@@ -453,7 +438,6 @@ class TestSliceProcessUtil:
     def test_process_video_frame_success_with_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
         """Testa processamento de um frame com sucesso e redimensionamento"""
         import numpy as np
-        import threading
 
         # Mock do video capture
         mock_cap = MagicMock()
@@ -461,10 +445,9 @@ class TestSliceProcessUtil:
         mock_cap.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
 
         metadata = VdscMetadata(dto=valid_event_dto)
-        process_lock = threading.Lock()
 
         result = process_video_frame(
-            1000, mock_cap, True, 1280, 720, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+            1000, "test_video.mp4", {"resize": True, "new_width": 1280, "new_height": 720}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
         )
 
         assert "Sucesso" in result
@@ -474,7 +457,6 @@ class TestSliceProcessUtil:
     def test_process_video_frame_success_without_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
         """Testa processamento de um frame com sucesso sem redimensionamento"""
         import numpy as np
-        import threading
 
         # Mock do video capture
         mock_cap = MagicMock()
@@ -482,10 +464,9 @@ class TestSliceProcessUtil:
         mock_cap.read.return_value = (True, np.zeros((720, 1280, 3), dtype=np.uint8))
 
         metadata = VdscMetadata(dto=valid_event_dto)
-        process_lock = threading.Lock()
 
         result = process_video_frame(
-            1000, mock_cap, False, None, None, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+            1000, "test_video.mp4", {"resize": False, "new_width": None, "new_height": None}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
         )
 
         assert "Sucesso" in result
@@ -494,17 +475,15 @@ class TestSliceProcessUtil:
     @patch('core.utils.slice_process_util.cv2.VideoCapture')
     def test_process_video_frame_failure_read(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
         """Testa processamento de um frame com falha na leitura"""
-        import threading
         # Mock do video capture com falha
         mock_cap = MagicMock()
         mock_video_capture.return_value = mock_cap
         mock_cap.read.return_value = (False, None)
 
         metadata = VdscMetadata(dto=valid_event_dto)
-        process_lock = threading.Lock()
 
         result = process_video_frame(
-            1000, mock_cap, False, None, None, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway, process_lock
+            1000, "test_video.mp4", {"resize": False, "new_width": None, "new_height": None}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
         )
 
         assert "Erro" in result
