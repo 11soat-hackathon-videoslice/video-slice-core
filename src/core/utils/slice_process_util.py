@@ -181,7 +181,7 @@ def metadata_update_status(vdsc_metadata: VdscMetadata, new_status: VdscStatusEn
 def process_video(vdsc_metadata, video_data, video_output_directory, gateway, config: VdscConfigDTO):
     """Processa os frames do vídeo e salva as imagens"""
     #Inicializando variáveis
-    resize_params = {'resize':True, 'new_width':None, 'new_height':None}
+    resize_params = {'resize':None, 'new_width':None, 'new_height':None}
     max_workers = config.vdsc.max_workers
 
     video_id = vdsc_metadata.video_id
