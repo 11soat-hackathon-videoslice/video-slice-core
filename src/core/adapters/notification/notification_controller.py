@@ -1,6 +1,6 @@
 from core.adapters.notification.notification_gateway import NotificationGateway
-from core.applications.notification.send_notification_use_case_factory import SendNotificationUseCaseFactory
 from core.applications.notification.send_notification_email_use_case import SendNotificationEmailUseCase
+from core.applications.notification.send_notification_use_case_factory import SendNotificationUseCaseFactory
 from core.applications.notification.send_notification_web_use_case import SendNotificationWebUseCase
 from core.dtos.notification_dto import NotificationDto
 from core.enums.notification_channels_enum import NotificationChannelsEnum

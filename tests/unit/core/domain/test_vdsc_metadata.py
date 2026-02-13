@@ -16,7 +16,7 @@ class TestVdscMetadata:
         return VdscMetadataDTO(
             video_id="video123",
             file_name="test_video.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="UPLOADED",
             created="2026-01-13T00:00:00Z",
             user_id="user123",
@@ -24,10 +24,11 @@ class TestVdscMetadata:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00", "00:01:00"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=75,
             logs=[]
         )
 
@@ -36,9 +37,9 @@ class TestVdscMetadata:
         metadata = VdscMetadata(dto=valid_dto)
         assert metadata.video_id == "video123"
         assert metadata.file_name == "test_video.mp4"
-        assert metadata.extension_file == "mp4"
+        assert metadata.file_extension == "mp4"
         assert metadata.user_id == "user123"
-        assert metadata.quality == "high"
+        assert metadata.resize == "high"
 
     def test_validate_success(self, valid_dto):
         """Testa validação bem-sucedida"""
@@ -96,16 +97,16 @@ class TestVdscMetadata:
             metadata.validate()
 
     def test_validate_invalid_quality(self, valid_dto):
-        """Testa validação com quality inválido"""
-        valid_dto.quality = "invalid"
+        """Testa validação com resize inválido"""
+        valid_dto.resize = "invalid"
         metadata = VdscMetadata(dto=valid_dto)
         with pytest.raises(ValueError, match="Qualidade deve ser uma das seguintes"):
             metadata.validate()
 
     def test_validate_retries_exceeds_max_retry(self, valid_dto):
-        """Testa validação com retries maior que max_retry"""
+        """Testa validação com retries maior que max_retries"""
         valid_dto.retries = 5
-        valid_dto.max_retry = 3
+        valid_dto.max_retries = 3
         metadata = VdscMetadata(dto=valid_dto)
         with pytest.raises(ValueError, match="Número de tentativas não pode exceder o máximo permitido"):
             metadata.validate()
@@ -226,8 +227,8 @@ class TestVdscMetadata:
             metadata.validate()
 
     def test_validate_empty_extension_file(self, valid_dto):
-        """Testa validação com extension_file vazio"""
-        valid_dto.extension_file = ""
+        """Testa validação com file_extension vazio"""
+        valid_dto.file_extension = ""
         metadata = VdscMetadata(dto=valid_dto)
         with pytest.raises(ValueError, match="Extensão do arquivo é obrigatória"):
             metadata.validate()
@@ -240,8 +241,8 @@ class TestVdscMetadata:
             metadata.validate()
 
     def test_validate_negative_max_retry(self, valid_dto):
-        """Testa validação com max_retry negativo"""
-        valid_dto.max_retry = -1
+        """Testa validação com max_retries negativo"""
+        valid_dto.max_retries = -1
         metadata = VdscMetadata(dto=valid_dto)
         with pytest.raises(ValueError, match="Número máximo de tentativas não pode ser negativo"):
             metadata.validate()
@@ -325,7 +326,7 @@ class TestVdscMetadata:
         dto = VdscMetadataDTO(
             video_id="video456",
             file_name="test.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="UPLOADED",
             created=datetime.now(UTC),
             user_id="user456",
@@ -333,10 +334,11 @@ class TestVdscMetadata:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00"],
-            max_retry=3,
+            interval_time=["00:00:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=50,
             logs=[]
         )
 
@@ -373,7 +375,7 @@ class TestVdscMetadataLogsTimestampFormat:
         return VdscMetadataDTO(
             video_id="video123",
             file_name="test.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="UPLOADED",
             created="2026-01-13T00:00:00Z",
             user_id="user123",
@@ -381,10 +383,11 @@ class TestVdscMetadataLogsTimestampFormat:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00"],
-            max_retry=3,
+            interval_time=["00:00:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=80,
             logs=[]
         )
 

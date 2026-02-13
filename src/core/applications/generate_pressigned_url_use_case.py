@@ -2,9 +2,9 @@ import logging
 
 from core.domain.url import Url
 from core.dtos.url_dto import UrlRequestDto
-from core.interfaces import UrlGatewayInterface
-from core.exceptions.vdsc_exceptions import VdscException
 from core.enums.vdsc_status_enum import VdscStatusEnum
+from core.exceptions.vdsc_exceptions import VdscException
+from core.interfaces import UrlGatewayInterface
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -48,7 +48,7 @@ class TestVdscMetadataDTO:
         return VdscMetadataDTO(
             video_id="video123",
             file_name="test_video.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="uploaded",
             created="2026-01-13T00:00:00Z",
             user_id="user123",
@@ -56,10 +56,11 @@ class TestVdscMetadataDTO:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00", "00:01:00"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=75,
             logs=[]
         )
 
@@ -67,7 +68,7 @@ class TestVdscMetadataDTO:
         """Testa criação de DTO válido"""
         assert valid_metadata_dto.video_id == "video123"
         assert valid_metadata_dto.file_name == "test_video.mp4"
-        assert valid_metadata_dto.extension_file == "mp4"
+        assert valid_metadata_dto.file_extension == "mp4"
 
     def test_validate_success(self, valid_metadata_dto):
         """Testa validação bem-sucedida"""
@@ -99,8 +100,8 @@ class TestVdscMetadataDTO:
             valid_metadata_dto.validate()
 
     def test_validate_empty_time_interval(self, valid_metadata_dto):
-        """Testa validação com time_interval vazio"""
-        valid_metadata_dto.time_interval = []
+        """Testa validação com interval_time vazio"""
+        valid_metadata_dto.interval_time = []
         with pytest.raises(Exception):
             valid_metadata_dto.validate()
 
@@ -128,7 +129,7 @@ class TestVdscMetadataDTO:
         data = {
             'videoId': 'video456',
             'fileName': 'from_dict.mp4',
-            'extension_file': 'mp4',
+            'fileExtension': 'mp4',
             'status': 'processing',
             'created': '2026-01-27T10:00:00Z',
             'userId': 'user456',
@@ -136,10 +137,11 @@ class TestVdscMetadataDTO:
             'unitTime': 's',
             'startTime': 0,
             'endTime': 120,
-            'timeInterval': ['00:00:00', '00:02:00'],
-            'maxRetry': 5,
+            'intervalTime': ['00:00:00', '00:02:00'],
+            'maxRetries': 5,
             'retries': 1,
-            'quality': 'ultra',
+            'resize': 'ultra',
+            'qualityOutputLevel': 90,
             'logs': [{'timestamp': '2026-01-27T10:00:00Z', 'info': 'Processing started'}]
         }
 
@@ -168,7 +170,7 @@ class TestVdscMetadataDTO:
         item = {
             'videoId': {'S': 'video789'},
             'fileName': {'S': 'from_dynamodb.mp4'},
-            'extensionFile': {'S': 'mp4'},
+            'fileExtension': {'S': 'mp4'},
             'status': {'S': 'finished'},
             'created': {'S': '2026-01-27T15:00:00Z'},
             'userId': {'S': 'user789'},
@@ -176,10 +178,11 @@ class TestVdscMetadataDTO:
             'unitTime': {'S': 's'},
             'startTime': {'N': '0'},
             'endTime': {'N': '30'},
-            'timeInterval': {'L': [{'S': '00:00:00'}, {'S': '00:00:30'}]},
-            'maxRetry': {'N': '3'},
+            'intervalTime': {'L': [{'S': '00:00:00'}, {'S': '00:00:30'}]},
+            'maxRetries': {'N': '3'},
             'retries': {'N': '0'},
-            'quality': {'S': 'high'},
+            'resize': {'S': 'high'},
+            'qualityOutputLevel': {'N': '85'},
             'logs': {'L': [
                 {'M': {
                     'timestamp': {'S': '2026-01-27T15:00:00Z'},
@@ -197,9 +200,9 @@ class TestVdscMetadataDTO:
         assert dto.logs[0].info == 'Finished'
 
     def test_validate_empty_extension_file(self, valid_metadata_dto):
-        """Testa validação com extension_file vazio"""
-        valid_metadata_dto.extension_file = ""
-        with pytest.raises(ValueError, match="extension_file"):
+        """Testa validação com file_extension vazio"""
+        valid_metadata_dto.file_extension = ""
+        with pytest.raises(ValueError, match="file_extension"):
             valid_metadata_dto.validate()
 
     def test_validate_empty_status(self, valid_metadata_dto):
@@ -227,9 +230,9 @@ class TestVdscMetadataDTO:
             valid_metadata_dto.validate()
 
     def test_validate_empty_quality(self, valid_metadata_dto):
-        """Testa validação com quality vazio"""
-        valid_metadata_dto.quality = ""
-        with pytest.raises(ValueError, match="quality"):
+        """Testa validação com resize vazio"""
+        valid_metadata_dto.resize = ""
+        with pytest.raises(ValueError, match="resize"):
             valid_metadata_dto.validate()
 
     def test_validate_negative_start_time(self, valid_metadata_dto):
@@ -245,27 +248,27 @@ class TestVdscMetadataDTO:
             valid_metadata_dto.validate()
 
     def test_validate_negative_max_retry(self, valid_metadata_dto):
-        """Testa validação com max_retry negativo"""
-        valid_metadata_dto.max_retry = -1
-        with pytest.raises(ValueError, match="max_retry"):
+        """Testa validação com max_retries negativo"""
+        valid_metadata_dto.max_retries = -1
+        with pytest.raises(ValueError, match="max_retries"):
             valid_metadata_dto.validate()
 
     def test_validate_time_interval_not_list(self, valid_metadata_dto):
-        """Testa validação com time_interval não sendo uma lista"""
-        valid_metadata_dto.time_interval = "not a list"
-        with pytest.raises(ValueError, match="time_interval"):
+        """Testa validação com interval_time não sendo uma lista"""
+        valid_metadata_dto.interval_time = "not a list"
+        with pytest.raises(ValueError, match="interval_time"):
             valid_metadata_dto.validate()
 
     def test_validate_time_interval_with_empty_string(self, valid_metadata_dto):
-        """Testa validação com time_interval contendo string vazia"""
-        valid_metadata_dto.time_interval = ["00:00:00", ""]
-        with pytest.raises(ValueError, match="time_interval"):
+        """Testa validação com interval_time contendo string vazia"""
+        valid_metadata_dto.interval_time = ["00:00:00", ""]
+        with pytest.raises(ValueError, match="interval_time"):
             valid_metadata_dto.validate()
 
     def test_validate_time_interval_with_non_string(self, valid_metadata_dto):
-        """Testa validação com time_interval contendo não-string"""
-        valid_metadata_dto.time_interval = ["00:00:00", 123]
-        with pytest.raises(ValueError, match="time_interval"):
+        """Testa validação com interval_time contendo não-string"""
+        valid_metadata_dto.interval_time = ["00:00:00", 123]
+        with pytest.raises(ValueError, match="interval_time"):
             valid_metadata_dto.validate()
 
     def test_validate_logs_not_list(self, valid_metadata_dto):
@@ -295,7 +298,7 @@ class TestVdscMetadataDTO:
         dto = VdscMetadataDTO(
             video_id="video999",
             file_name="test_with_logs.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="processing",
             created="2026-01-27T10:00:00Z",
             user_id="user999",
@@ -303,10 +306,11 @@ class TestVdscMetadataDTO:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00", "00:01:00"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
             retries=1,
-            quality="medium",
+            resize="medium",
+            quality_output_level=60,
             logs=[log1, log2]
         )
 
@@ -353,7 +357,7 @@ class TestVdscMetadataDTO:
         base_dto = VdscMetadataDTO(
             video_id="video_from_domain",
             file_name="test_domain.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="uploaded",
             created="2026-01-13T00:00:00Z",
             user_id="user_domain",
@@ -361,10 +365,11 @@ class TestVdscMetadataDTO:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00", "00:01:00"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=80,
             logs=[]
         )
 
@@ -391,7 +396,7 @@ class TestVdscMetadataDTO:
         base_dto = VdscMetadataDTO(
             video_id="video123",
             file_name="complete_test.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="processing",
             created="2026-02-09T10:30:00Z",
             user_id="user456",
@@ -399,10 +404,11 @@ class TestVdscMetadataDTO:
             unit_time="s",
             start_time=100,
             end_time=200,
-            time_interval=["00:01:40", "00:03:20"],
-            max_retry=5,
+            interval_time=["00:01:40", "00:03:20"],
+            max_retries=5,
             retries=2,
-            quality="medium",
+            resize="medium",
+            quality_output_level=70,
             logs=[]
         )
 
@@ -411,7 +417,7 @@ class TestVdscMetadataDTO:
 
         assert result_dto.video_id == base_dto.video_id
         assert result_dto.file_name == base_dto.file_name
-        assert result_dto.extension_file == base_dto.extension_file
+        assert result_dto.file_extension == base_dto.file_extension
         assert result_dto.status == base_dto.status
         assert result_dto.created == base_dto.created
         assert result_dto.user_id == base_dto.user_id
@@ -419,10 +425,10 @@ class TestVdscMetadataDTO:
         assert result_dto.unit_time == base_dto.unit_time
         assert result_dto.start_time == base_dto.start_time
         assert result_dto.end_time == base_dto.end_time
-        assert result_dto.time_interval == base_dto.time_interval
-        assert result_dto.max_retry == base_dto.max_retry
+        assert result_dto.interval_time == base_dto.interval_time
+        assert result_dto.max_retries == base_dto.max_retries
         assert result_dto.retries == base_dto.retries
-        assert result_dto.quality == base_dto.quality
+        assert result_dto.resize == base_dto.resize
 
     def test_from_domain_with_multiple_logs(self):
         """Testa from_domain com múltiplos logs"""
@@ -432,7 +438,7 @@ class TestVdscMetadataDTO:
         base_dto = VdscMetadataDTO(
             video_id="video_logs",
             file_name="logs_test.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="uploaded",
             created="2026-02-09T10:00:00Z",
             user_id="user_logs",
@@ -440,10 +446,11 @@ class TestVdscMetadataDTO:
             unit_time="s",
             start_time=0,
             end_time=30,
-            time_interval=["00:00:00", "00:00:30"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:00:30"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=95,
             logs=[]
         )
 

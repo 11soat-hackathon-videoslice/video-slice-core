@@ -31,7 +31,7 @@ class TestSliceGateway:
         return VdscMetadataDTO(
             video_id="video123",
             file_name="test_video.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="uploaded",
             created="2026-01-13T00:00:00Z",
             user_id="user123",
@@ -39,10 +39,11 @@ class TestSliceGateway:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=["00:00:00", "00:01:00"],
-            max_retry=3,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=77,
             logs=[]
         )
 

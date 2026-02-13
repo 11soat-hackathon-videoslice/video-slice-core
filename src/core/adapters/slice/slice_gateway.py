@@ -1,19 +1,17 @@
 import datetime
 
 from core.domain.notification import Notification
-from core.dtos.notification_dto import NotificationDto
-from core.interfaces import SliceGatewayInferface
-from core.interfaces import SliceDataProxyInterface
-from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 from core.domain.vdsc_metadata import VdscMetadata
+from core.dtos.notification_dto import NotificationDto
+from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.interfaces import SliceDataProxyInterface
+from core.interfaces import SliceGatewayInferface
+
 
 class SliceGateway(SliceGatewayInferface):
 
     def __init__(self, dataproxy: SliceDataProxyInterface):
         self.dataproxy = dataproxy
-
-    def create_zip_file(self, directory_path: str, zip_file_path: str) -> None:
-        self.dataproxy.create_zip_file(directory_path, zip_file_path)
 
     def delete_file(self, file_path: str) -> None:
         self.dataproxy.delete_file(file_path)
@@ -38,6 +36,9 @@ class SliceGateway(SliceGatewayInferface):
         notification_dto = NotificationDto.from_domain(notification)
         self.dataproxy.send_notification(notification_dto)
 
+    def upload_finished_zip(self, output_directory: str, target_path: str) -> None:
+        self.dataproxy.upload_finished_zip(output_directory, target_path)
+
     def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
         """Atualiza metadados convertendo a entidade de domínio para DTO"""
         # Converter entidade de domínio para dict e depois para DTO
@@ -47,7 +48,6 @@ class SliceGateway(SliceGatewayInferface):
         # Converter DTO de volta para entidade de domínio
         return VdscMetadata(dto=updated_dto)
 
-    def upload_zip_file(self, source_path: str, target_path: str) -> None:
-        self.dataproxy.upload_zip_file(source_path, target_path)
+
 
 

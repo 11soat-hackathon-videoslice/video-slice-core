@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from core.domain.notification import Notification
 from core.dtos.notification_dto import NotificationDto
 from core.enums import NotificationChannelsEnum

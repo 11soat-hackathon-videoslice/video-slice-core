@@ -1,33 +1,33 @@
 """Testes unitários para VdscConfigDTO e classes relacionadas"""
 import pytest
 from core.dtos.vdsc_config_dto import (
-    QualityDTO,
+    ResizeDTO,
     ScheduleRulesDTO,
     VdscSettingsDTO,
     VdscConfigDTO
 )
 
 @pytest.mark.unit
-class TestQualityDTO:
-    """Testes para a classe QualityDTO"""
+class TestResizeDTO:
+    """Testes para a classe ResizeDTO"""
 
     def test_create_quality_dto(self):
-        """Testa criação de QualityDTO com valores válidos"""
-        quality = QualityDTO(
+        """Testa criação de ResizeDTO com valores válidos"""
+        resize = ResizeDTO(
             ultra=2160,
             high=1080,
             medium=720,
             low=480
         )
 
-        assert quality.ultra == 2160
-        assert quality.high == 1080
-        assert quality.medium == 720
-        assert quality.low == 480
+        assert resize.ultra == 2160
+        assert resize.high == 1080
+        assert resize.medium == 720
+        assert resize.low == 480
 
     def test_quality_dto_is_immutable(self):
-        """Testa que QualityDTO é imutável (frozen)"""
-        quality = QualityDTO(
+        """Testa que ResizeDTO é imutável (frozen)"""
+        resize = ResizeDTO(
             ultra=2160,
             high=1080,
             medium=720,
@@ -36,34 +36,34 @@ class TestQualityDTO:
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
-            quality.high = 1920
+            resize.high = 1920
 
     def test_quality_dto_equality(self):
         """Testa comparação de igualdade entre instâncias"""
-        quality1 = QualityDTO(ultra=2160, high=1080, medium=720, low=480)
-        quality2 = QualityDTO(ultra=2160, high=1080, medium=720, low=480)
-        quality3 = QualityDTO(ultra=1920, high=1080, medium=720, low=480)
+        quality1 = ResizeDTO(ultra=2160, high=1080, medium=720, low=480)
+        quality2 = ResizeDTO(ultra=2160, high=1080, medium=720, low=480)
+        quality3 = ResizeDTO(ultra=1920, high=1080, medium=720, low=480)
 
         assert quality1 == quality2
         assert quality1 != quality3
 
     def test_quality_dto_with_zero_values(self):
         """Testa criação com valores zero"""
-        quality = QualityDTO(ultra=0, high=0, medium=0, low=0)
+        resize = ResizeDTO(ultra=0, high=0, medium=0, low=0)
 
-        assert quality.ultra == 0
-        assert quality.high == 0
-        assert quality.medium == 0
-        assert quality.low == 0
+        assert resize.ultra == 0
+        assert resize.high == 0
+        assert resize.medium == 0
+        assert resize.low == 0
 
     def test_quality_dto_with_negative_values(self):
         """Testa criação com valores negativos"""
-        quality = QualityDTO(ultra=-1, high=-1, medium=-1, low=-1)
+        resize = ResizeDTO(ultra=-1, high=-1, medium=-1, low=-1)
 
-        assert quality.ultra == -1
-        assert quality.high == -1
-        assert quality.medium == -1
-        assert quality.low == -1
+        assert resize.ultra == -1
+        assert resize.high == -1
+        assert resize.medium == -1
+        assert resize.low == -1
 
 
 @pytest.mark.unit
@@ -184,8 +184,8 @@ class TestVdscSettingsDTO:
 
     @pytest.fixture
     def quality_dto(self):
-        """Fixture com QualityDTO válido"""
-        return QualityDTO(ultra=2160, high=1080, medium=720, low=480)
+        """Fixture com ResizeDTO válido"""
+        return ResizeDTO(ultra=2160, high=1080, medium=720, low=480)
 
     @pytest.fixture
     def schedule_rules_dto(self):
@@ -204,10 +204,8 @@ class TestVdscSettingsDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
@@ -217,20 +215,16 @@ class TestVdscSettingsDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
         assert settings.dir_uploads == "uploads/"
         assert settings.dir_finished == "finished/"
         assert settings.dir_tmp == "tmp/"
-        assert settings.png_compression_level == 3
-        assert settings.zip_compression_level == 6
         assert settings.max_workers ==  10
-        assert settings.quality == quality_dto
+        assert settings.resize == quality_dto
         assert settings.schedule_event_rules == schedule_rules_dto
 
     def test_vdsc_settings_dto_is_immutable(self, quality_dto, schedule_rules_dto):
@@ -239,16 +233,14 @@ class TestVdscSettingsDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
-            settings.png_compression_level = 5
+            settings.max_workers = 5
 
     def test_vdsc_settings_dto_equality(self, quality_dto, schedule_rules_dto):
         """Testa comparação de igualdade entre instâncias"""
@@ -256,30 +248,24 @@ class TestVdscSettingsDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
         settings2 = VdscSettingsDTO(
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
         settings3 = VdscSettingsDTO(
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=5,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=ResizeDTO(ultra=1920, high=1080, medium=720, low=480),
             schedule_event_rules=schedule_rules_dto
         )
 
@@ -292,14 +278,12 @@ class TestVdscSettingsDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
-        assert settings.quality.high == 1080
+        assert settings.resize.high == 1080
         assert settings.schedule_event_rules.retry_backoff_factor == 2
 
 
@@ -310,8 +294,8 @@ class TestVdscConfigDTO:
 
     @pytest.fixture
     def quality_dto(self):
-        """Fixture com QualityDTO válido"""
-        return QualityDTO(ultra=2160, high=1080, medium=720, low=480)
+        """Fixture com ResizeDTO válido"""
+        return ResizeDTO(ultra=2160, high=1080, medium=720, low=480)
 
     @pytest.fixture
     def schedule_rules_dto(self):
@@ -330,10 +314,8 @@ class TestVdscConfigDTO:
             dir_uploads="uploads/",
             dir_finished="finished/",
             dir_tmp="tmp/",
-            png_compression_level=3,
-            zip_compression_level=6,
             max_workers=10,
-            quality=quality_dto,
+            resize=quality_dto,
             schedule_event_rules=schedule_rules_dto
         )
 
@@ -404,8 +386,7 @@ class TestVdscConfigDTO:
             vdsc=vdsc_settings_dto
         )
 
-        assert config.vdsc.png_compression_level == 3
-        assert config.vdsc.quality.high == 1080
+        assert config.vdsc.resize.high == 1080
         assert config.vdsc.schedule_event_rules.retry_backoff_factor == 2
 
     def test_vdsc_config_dto_with_different_regions(self, vdsc_settings_dto):
@@ -433,10 +414,8 @@ class TestVdscConfigDTO:
                 dir_uploads="uploads/",
                 dir_finished="finished/",
                 dir_tmp="tmp/",
-                png_compression_level=3,
-                zip_compression_level=6,
                 max_workers=10,
-                quality=QualityDTO(
+                resize=ResizeDTO(
                     ultra=2160,
                     high=1080,
                     medium=720,
@@ -456,8 +435,7 @@ class TestVdscConfigDTO:
         assert config.s3_bucket_name == "my-video-bucket"
         assert config.dynamodb_table_name == "VideoSlice"
         assert config.event_bus_name == "video-slice-events"
-        assert config.vdsc.png_compression_level == 3
-        assert config.vdsc.quality.high == 1080
+        assert config.vdsc.resize.high == 1080
         assert config.vdsc.schedule_event_rules.retry_backoff_factor == 2
 
     def test_vdsc_config_dto_with_empty_strings(self, vdsc_settings_dto):
@@ -492,10 +470,8 @@ class TestVdscConfigDTOIntegration:
                 dir_uploads="uploads/",
                 dir_finished="finished/",
                 dir_tmp="tmp/",
-                png_compression_level=3,
-                zip_compression_level=6,
                 max_workers=10,
-                quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
+                resize=ResizeDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
                     retry_arn="arn:aws:scheduler:us-east-1:123456789012:schedule/vdsc-retry",
@@ -508,13 +484,11 @@ class TestVdscConfigDTOIntegration:
         # Testa acesso a todos os níveis
         assert config.aws_region == "us-east-1"
         assert config.s3_bucket_name == "vdsc-prd-s3-bucket"
-        assert config.vdsc.png_compression_level == 3
-        assert config.vdsc.zip_compression_level == 6
         assert config.vdsc.max_workers == 10
-        assert config.vdsc.quality.ultra == 2160
-        assert config.vdsc.quality.high == 1080
-        assert config.vdsc.quality.medium == 720
-        assert config.vdsc.quality.low == 480
+        assert config.vdsc.resize.ultra == 2160
+        assert config.vdsc.resize.high == 1080
+        assert config.vdsc.resize.medium == 720
+        assert config.vdsc.resize.low == 480
         assert config.vdsc.schedule_event_rules.retry_backoff_factor == 2
         assert "vdsc-retry" in config.vdsc.schedule_event_rules.retry_arn
 
@@ -529,10 +503,8 @@ class TestVdscConfigDTOIntegration:
                 dir_uploads="uploads/",
                 dir_finished="finished/",
                 dir_tmp="tmp/",
-                png_compression_level=3,
-                zip_compression_level=6,
                 max_workers=10,
-                quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
+                resize=ResizeDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
                     retry_arn="arn:aws:scheduler:us-east-1:123456789012:schedule/retry",
@@ -547,9 +519,6 @@ class TestVdscConfigDTOIntegration:
             # noinspection PyDataclass
             config.aws_region = "us-west-2"  # type: ignore
 
-        with pytest.raises(AttributeError):
-            # noinspection PyDataclass
-            config.vdsc.png_compression_level = 5  # type: ignore
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
@@ -557,7 +526,7 @@ class TestVdscConfigDTOIntegration:
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
-            config.vdsc.quality.high = 1920  # type: ignore
+            config.vdsc.resize.high = 1920  # type: ignore
 
         with pytest.raises(AttributeError):
             # noinspection PyDataclass
@@ -574,10 +543,8 @@ class TestVdscConfigDTOIntegration:
                 dir_uploads="uploads/",
                 dir_finished="finished/",
                 dir_tmp="tmp/",
-                png_compression_level=3,
-                zip_compression_level=6,
                 max_workers=10,
-                quality=QualityDTO(ultra=2160, high=1080, medium=720, low=480),
+                resize=ResizeDTO(ultra=2160, high=1080, medium=720, low=480),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=2,
                     retry_arn="arn1",
@@ -596,10 +563,8 @@ class TestVdscConfigDTOIntegration:
                 dir_uploads="uploads/",
                 dir_finished="finished/",
                 dir_tmp="tmp/",
-                png_compression_level=5,
-                zip_compression_level=9,
                 max_workers=10,
-                quality=QualityDTO(ultra=1920, high=720, medium=480, low=360),
+                resize=ResizeDTO(ultra=1920, high=720, medium=480, low=360),
                 schedule_event_rules=ScheduleRulesDTO(
                     retry_backoff_factor=3,
                     retry_arn="arn2",
@@ -613,5 +578,4 @@ class TestVdscConfigDTOIntegration:
         assert config1.aws_region != config2.aws_region
         assert config1.s3_bucket_name != config2.s3_bucket_name
         assert config1.dynamodb_table_name != config2.dynamodb_table_name
-        assert config1.vdsc.png_compression_level != config2.vdsc.png_compression_level
-        assert config1.vdsc.quality.high != config2.vdsc.quality.high
+        assert config1.vdsc.resize.high != config2.vdsc.resize.high

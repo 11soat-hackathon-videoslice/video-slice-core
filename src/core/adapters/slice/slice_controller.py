@@ -1,10 +1,11 @@
+from core.applications.slice_process_use_case import SliceProcessUseCase
+from core.dtos.vdsc_config_dto import VdscConfigDTO
+from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 from core.interfaces import SliceControllerInterface
 from core.interfaces import SliceDataProxyInterface
 from core.interfaces import VdscExceptionHandlerInterface
-from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
-from core.dtos.vdsc_config_dto import VdscConfigDTO
 from .slice_gateway import SliceGateway
-from core.applications.slice_process_use_case import SliceProcessUseCase
+
 
 class SliceController(SliceControllerInterface):
 

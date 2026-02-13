@@ -1,6 +1,6 @@
-"""Testes unitários para VideoQuality enum"""
+"""Testes unitários para VideoResize enum"""
 import pytest
-from core.enums.video_quality_enum import VideoQuality
+from core.enums.video_resize_enum import VideoResize
 
 
 @pytest.mark.unit
@@ -9,27 +9,27 @@ class TestVideoQuality:
 
     def test_enum_values(self):
         """Testa se todos os valores do enum estão definidos corretamente"""
-        assert VideoQuality.ULTRA.value == "ultra"
-        assert VideoQuality.HIGH.value == "high"
-        assert VideoQuality.MEDIUM.value == "medium"
-        assert VideoQuality.LOW.value == "low"
+        assert VideoResize.ULTRA.value == "ultra"
+        assert VideoResize.HIGH.value == "high"
+        assert VideoResize.MEDIUM.value == "medium"
+        assert VideoResize.LOW.value == "low"
 
     def test_is_valid_with_valid_quality(self):
         """Testa validação com qualidade válida"""
-        assert VideoQuality.is_valid("ultra") is True
-        assert VideoQuality.is_valid("high") is True
-        assert VideoQuality.is_valid("medium") is True
-        assert VideoQuality.is_valid("low") is True
+        assert VideoResize.is_valid("ultra") is True
+        assert VideoResize.is_valid("high") is True
+        assert VideoResize.is_valid("medium") is True
+        assert VideoResize.is_valid("low") is True
 
     def test_is_valid_with_invalid_quality(self):
         """Testa validação com qualidade inválida"""
-        assert VideoQuality.is_valid("invalid") is False
-        assert VideoQuality.is_valid("") is False
-        assert VideoQuality.is_valid("HIGH") is False
+        assert VideoResize.is_valid("invalid") is False
+        assert VideoResize.is_valid("") is False
+        assert VideoResize.is_valid("HIGH") is False
 
     def test_get_all_values(self):
         """Testa obtenção de todos os valores"""
-        all_values = VideoQuality.get_all_values()
+        all_values = VideoResize.get_all_values()
         assert len(all_values) == 4
         assert "ultra" in all_values
         assert "high" in all_values
@@ -38,24 +38,24 @@ class TestVideoQuality:
 
     def test_str_method(self):
         """Testa método __str__ do enum"""
-        assert str(VideoQuality.ULTRA) == "ultra"
-        assert str(VideoQuality.HIGH) == "high"
+        assert str(VideoResize.ULTRA) == "ultra"
+        assert str(VideoResize.HIGH) == "high"
 
     def test_get_scale_factor(self):
         """Testa obtenção de fator de escala"""
-        assert VideoQuality.ULTRA.get_scale_factor() == "ultra"
-        assert VideoQuality.HIGH.get_scale_factor() == "high"
-        assert VideoQuality.MEDIUM.get_scale_factor() == "medium"
-        assert VideoQuality.LOW.get_scale_factor() == "low"
+        assert VideoResize.ULTRA.get_scale_factor() == "ultra"
+        assert VideoResize.HIGH.get_scale_factor() == "high"
+        assert VideoResize.MEDIUM.get_scale_factor() == "medium"
+        assert VideoResize.LOW.get_scale_factor() == "low"
 
     def test_from_scale_valid(self):
         """Testa criação a partir de escala válida"""
-        assert VideoQuality.from_scale("ultra") == VideoQuality.ULTRA
-        assert VideoQuality.from_scale("high") == VideoQuality.HIGH
-        assert VideoQuality.from_scale("medium") == VideoQuality.MEDIUM
-        assert VideoQuality.from_scale("low") == VideoQuality.LOW
+        assert VideoResize.from_scale("ultra") == VideoResize.ULTRA
+        assert VideoResize.from_scale("high") == VideoResize.HIGH
+        assert VideoResize.from_scale("medium") == VideoResize.MEDIUM
+        assert VideoResize.from_scale("low") == VideoResize.LOW
 
     def test_from_scale_invalid(self):
         """Testa criação a partir de escala inválida"""
         with pytest.raises(ValueError):
-            VideoQuality.from_scale("invalid")
+            VideoResize.from_scale("invalid")

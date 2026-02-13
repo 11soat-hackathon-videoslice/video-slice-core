@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
-class QualityDTO:
+class ResizeDTO:
     ultra: int
     high: int
     medium: int
@@ -27,10 +27,8 @@ class VdscSettingsDTO:
     dir_finished: str
     dir_tmp: str
     max_workers: int
-    png_compression_level: int
-    quality: QualityDTO
+    resize: ResizeDTO
     schedule_event_rules: ScheduleRulesDTO
-    zip_compression_level: int
 
 @dataclass(frozen=True)
 class VdscConfigDTO:

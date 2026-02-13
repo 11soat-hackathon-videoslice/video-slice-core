@@ -2,10 +2,10 @@
 from enum import Enum
 
 
-class VideoQuality(str, Enum):
-    """Enumeração para níveis de qualidade de vídeo usados na captura de frames.
+class VideoResize(str, Enum):
+    """Enumeração para níveis de redimensionamento de vídeo usados na captura de frames.
 
-    Valores representam configurações de qualidade para processamento de vídeo:
+    Valores representam configurações de redimensionamento para processamento de vídeo:
     - ULTRA: Qualidade máxima (100%)
     - HIGH: Qualidade alta (75%)
     - MEDIUM: Qualidade média (50%)
@@ -22,9 +22,9 @@ class VideoQuality(str, Enum):
         return self.value
 
     @classmethod
-    def is_valid(cls, quality: str) -> bool:
+    def is_valid(cls, resize: str) -> bool:
         """Verifica se uma string de qualidade é válida."""
-        return quality in [q.value for q in cls]
+        return resize in [q.value for q in cls]
 
     @classmethod
     def get_all_values(cls) -> list:
@@ -36,19 +36,19 @@ class VideoQuality(str, Enum):
         return self.value
 
     @classmethod
-    def from_scale(cls, scale: str) -> 'VideoQuality':
-        """Obtém VideoQuality a partir de um fator de escala.
+    def from_scale(cls, scale: str) -> 'VideoResize':
+        """Obtém VideoResize a partir de um fator de escala.
 
         Args:
             scale: Fator de escala (string: "ultra", "high", "medium", "low")
 
         Returns:
-            Enum VideoQuality correspondente à escala
+            Enum VideoResize correspondente à escala
 
         Raises:
             ValueError: Se o fator de escala não for válido
         """
-        for quality in cls:
-            if quality.value == scale:
-                return quality
+        for resize in cls:
+            if resize.value == scale:
+                return resize
         raise ValueError(f"Fator de escala inválido: {scale}")

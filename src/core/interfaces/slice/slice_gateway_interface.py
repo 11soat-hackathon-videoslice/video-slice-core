@@ -4,11 +4,8 @@ from abc import ABC, abstractmethod
 from core.domain.notification import Notification
 from core.domain.vdsc_metadata import VdscMetadata
 
-class SliceGatewayInferface(ABC):
 
-    @abstractmethod
-    def create_zip_file(self, directory_path: str, zip_file_path: str) -> None:
-        pass
+class SliceGatewayInferface(ABC):
 
     @abstractmethod
     def delete_file(self, file_path: str) -> None:
@@ -35,12 +32,13 @@ class SliceGatewayInferface(ABC):
         pass
 
     @abstractmethod
-    def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
+    def upload_finished_zip(self, output_directory: str, target_path: str) -> None:
         pass
 
     @abstractmethod
-    def upload_zip_file(self, directory_path: str, zip_file_path: str) -> None:
+    def update_metadata(self, update_data: VdscMetadata) -> VdscMetadata:
         pass
+
 
 
 

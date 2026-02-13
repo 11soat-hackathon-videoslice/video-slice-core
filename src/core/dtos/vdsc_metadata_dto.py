@@ -38,7 +38,7 @@ class VdscMetadataDTO:
 
     video_id: str
     file_name: str
-    extension_file: str
+    file_extension: str
     status: str
     created: str
     user_id: str
@@ -46,10 +46,11 @@ class VdscMetadataDTO:
     unit_time: str
     start_time: int
     end_time: int
-    time_interval: List[str]
-    max_retry: int
+    interval_time: List[str]
+    max_retries: int
     retries: int
-    quality: str
+    resize: str
+    quality_output_level: int
     logs: List[LogEntryDTO]
 
     def _validate_required_string(self, value: str, field_name: str) -> None:
@@ -68,19 +69,26 @@ class VdscMetadataDTO:
         """Valida todos os campos string obrigatórios"""
         self._validate_required_string(self.video_id, "video_id")
         self._validate_required_string(self.file_name, "file_name")
-        self._validate_required_string(self.extension_file, "extension_file")
+        self._validate_required_string(self.file_extension, "file_extension")
         self._validate_required_string(self.status, "status")
         self._validate_required_string(self.created, "created")
         self._validate_required_string(self.user_id, "user_id")
         self._validate_required_string(self.unit_time, "unit_time")
-        self._validate_required_string(self.quality, "quality")
+        self._validate_required_string(self.resize, "resize")
+
+    def _validate_quality_output_level(self) -> None:
+        """Valida quality_output_level"""
+        if not isinstance(self.quality_output_level, int):
+            raise ValueError("O campo 'quality_output_level' deve ser um número inteiro")
+        if self.quality_output_level < 1 or self.quality_output_level > 100:
+            raise ValueError("O campo 'quality_output_level' deve estar entre 1 e 100")
 
     def _validate_numeric_fields(self) -> None:
         """Valida todos os campos numéricos"""
         self._validate_non_negative_integer(self.total_time, "total_time")
         self._validate_non_negative_integer(self.start_time, "start_time")
         self._validate_non_negative_integer(self.end_time, "end_time")
-        self._validate_non_negative_integer(self.max_retry, "max_retry")
+        self._validate_non_negative_integer(self.max_retries, "max_retries")
         self._validate_non_negative_integer(self.retries, "retries")
 
     def _validate_time_range(self) -> None:
@@ -90,13 +98,13 @@ class VdscMetadataDTO:
 
     def _validate_time_interval_list(self) -> None:
         """Valida lista de intervalos de tempo"""
-        if not isinstance(self.time_interval, list):
-            raise ValueError("O campo 'time_interval' deve ser uma lista")
-        if len(self.time_interval) == 0:
-            raise ValueError("O campo 'time_interval' não pode ser uma lista vazia")
-        for idx, interval in enumerate(self.time_interval):
+        if not isinstance(self.interval_time, list):
+            raise ValueError("O campo 'interval_time' deve ser uma lista")
+        if len(self.interval_time) == 0:
+            raise ValueError("O campo 'interval_time' não pode ser uma lista vazia")
+        for idx, interval in enumerate(self.interval_time):
             if not isinstance(interval, str) or interval.strip() == "":
-                raise ValueError(f"O item {idx} do 'time_interval' deve ser uma string não vazia")
+                raise ValueError(f"O item {idx} do 'interval_time' deve ser uma string não vazia")
 
     def _validate_logs_list(self) -> None:
         """Valida lista de logs"""
@@ -114,6 +122,7 @@ class VdscMetadataDTO:
         """Valida todos os campos do DTO"""
         self._validate_string_fields()
         self._validate_numeric_fields()
+        self._validate_quality_output_level()
         self._validate_time_range()
         self._validate_time_interval_list()
         self._validate_logs_list()
@@ -124,7 +133,7 @@ class VdscMetadataDTO:
         return {
             "videoId": self.video_id,
             "fileName": self.file_name,
-            "extension_file": self.extension_file,
+            "fileExtension": self.file_extension,
             "status": self.status,
             "created": self.created,
             "userId": self.user_id,
@@ -132,10 +141,11 @@ class VdscMetadataDTO:
             "unitTime": self.unit_time,
             "startTime": self.start_time,
             "endTime": self.end_time,
-            "timeInterval": self.time_interval,
-            "maxRetry": self.max_retry,
+            "intervalTime": self.interval_time,
+            "maxRetries": self.max_retries,
             "retries": self.retries,
-            "quality": self.quality,
+            "resize": self.resize,
+            "qualityOutputLevel": self.quality_output_level,
             "logs": [log.to_dict() for log in self.logs]
         }
 
@@ -153,7 +163,7 @@ class VdscMetadataDTO:
         return cls(
             video_id=data['videoId'],
             file_name=data['fileName'],
-            extension_file=data['extension_file'],
+            file_extension=data['fileExtension'],
             status=data['status'],
             created=data['created'],
             user_id=data['userId'],
@@ -161,10 +171,11 @@ class VdscMetadataDTO:
             unit_time=data['unitTime'],
             start_time=data['startTime'],
             end_time=data['endTime'],
-            time_interval=data['timeInterval'],
-            max_retry=data['maxRetry'],
+            interval_time=data['intervalTime'],
+            max_retries=data['maxRetries'],
             retries=data['retries'],
-            quality=data['quality'],
+            resize=data['resize'],
+            quality_output_level=int(data.get('qualityOutputLevel', 50)),
             logs=logs
         )
 
@@ -183,7 +194,7 @@ class VdscMetadataDTO:
         return cls(
             video_id=metadata.video_id,
             file_name=metadata.file_name,
-            extension_file=metadata.extension_file,
+            file_extension=metadata.file_extension,
             status=metadata.status,
             created=metadata.created,
             user_id=metadata.user_id,
@@ -191,10 +202,11 @@ class VdscMetadataDTO:
             unit_time=metadata.unit_time,
             start_time=metadata.start_time,
             end_time=metadata.end_time,
-            time_interval=metadata.time_interval,
-            max_retry=metadata.max_retry,
+            interval_time=metadata.interval_time,
+            max_retries=metadata.max_retries,
             retries=metadata.retries,
-            quality=metadata.quality,
+            resize=metadata.resize,
+            quality_output_level=metadata.quality_output_level,
             logs=logs_dtos
         )
 
@@ -213,7 +225,7 @@ class VdscMetadataDTO:
         return cls(
             video_id=item['videoId']['S'],
             file_name=item['fileName']['S'],
-            extension_file=item['extensionFile']['S'],
+            file_extension=item['fileExtension']['S'],
             status=item['status']['S'],
             created=item['created']['S'],
             user_id=item['userId']['S'],
@@ -221,10 +233,11 @@ class VdscMetadataDTO:
             unit_time=item['unitTime']['S'],
             start_time=int(item['startTime']['N']),
             end_time=int(item['endTime']['N']),
-            time_interval=[interval['S'] for interval in item['timeInterval']['L']],
-            max_retry=int(item['maxRetry']['N']),
+            interval_time=[interval['S'] for interval in item['intervalTime']['L']],
+            max_retries=int(item['maxRetries']['N']),
             retries=int(item['retries']['N']),
-            quality=item['quality']['S'],
+            resize=item['resize']['S'],
+            quality_output_level=int(item.get('qualityOutputLevel', {}).get('N', 50)),
             logs=logs
         )
 
@@ -245,7 +258,7 @@ class VdscMetadataDTO:
         return {
             'videoId': {'S': str(self.video_id)},
             'fileName': {'S': self.file_name},
-            'extensionFile': {'S': self.extension_file},
+            'fileExtension': {'S': self.file_extension},
             'status': {'S': self.status},
             'created': {'S': self.created},
             'userId': {'S': self.user_id},
@@ -253,10 +266,11 @@ class VdscMetadataDTO:
             'unitTime': {'S': self.unit_time},
             'startTime': {'N': str(self.start_time)},
             'endTime': {'N': str(self.end_time)},
-            'timeInterval': {'L': [{'S': interval} for interval in self.time_interval]},
-            'maxRetry': {'N': str(self.max_retry)},
+            'intervalTime': {'L': [{'S': interval} for interval in self.interval_time]},
+            'maxRetries': {'N': str(self.max_retries)},
             'retries': {'N': str(self.retries)},
-            'quality': {'S': self.quality},
+            'resize': {'S': self.resize},
+            'qualityOutputLevel': {'N': str(self.quality_output_level)},
             'logs': logs_dynamodb
         }
 

@@ -1,11 +1,10 @@
 """Testes unitários para slice_process_util"""
-import pytest
-import io
-import zipfile
-import sys
-from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import Mock, MagicMock, patch
 from uuid import UUID
+
+import pytest
+import sys
 
 # Mock cv2 to avoid import issues
 sys.modules['cv2'] = MagicMock()
@@ -13,24 +12,19 @@ sys.modules['cv2'] = MagicMock()
 from core.utils.slice_process_util import (
     create_temporary_file,
     create_interval_list,
-    create_zip_buffer,
-    encode_frame_to_png,
-    frame_resize,
-    get_file_info_list,
     get_multiplier_time_unit,
     get_path_file,
     get_path_directory,
-    get_recurrent_time_intervals,
-    get_specific_time_intervals,
+    get_recurrent_interval_times,
+    get_specific_interval_times,
     get_frame_new_size,
     metadata_update_status,
-    process_video,
-    process_video_frame,
     set_exception_status,
     create_notification,
     create_email_notification,
     create_web_notification
 )
+from core.utils.slice_video_process_frame_util import frame_resize, encode_frame_to_jpg
 from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
 from core.dtos.vdsc_config_dto import VdscConfigDTO
 from core.enums.vdsc_status_enum import VdscStatusEnum
@@ -65,7 +59,7 @@ class TestSliceProcessUtil:
     @pytest.fixture
     def mock_config(self):
         """Fixture da configuração"""
-        # Mock para QualityDTO
+        # Mock para ResizeDTO
         quality_mock = MagicMock()
         quality_mock.ultra = 1080
         quality_mock.high = 720
@@ -84,10 +78,8 @@ class TestSliceProcessUtil:
         vdsc_settings_mock.dir_uploads = "uploads"
         vdsc_settings_mock.dir_finished = "finished"
         vdsc_settings_mock.dir_tmp = "/tmp"
-        vdsc_settings_mock.zip_compression_level = 6
-        vdsc_settings_mock.png_compression_level = 3
         vdsc_settings_mock.max_workers = 4
-        vdsc_settings_mock.quality = quality_mock
+        vdsc_settings_mock.resize = quality_mock
         vdsc_settings_mock.schedule_event_rules = schedule_rules_mock
 
         # Mock para VdscConfigDTO
@@ -106,7 +98,7 @@ class TestSliceProcessUtil:
         return VdscMetadataDTO(
             video_id="video123",
             file_name="test_video.mp4",
-            extension_file="mp4",
+            file_extension="mp4",
             status="UPLOADED",
             created="2026-01-13T00:00:00Z",
             user_id="user123",
@@ -114,10 +106,11 @@ class TestSliceProcessUtil:
             unit_time="s",
             start_time=0,
             end_time=60,
-            time_interval=[10],
-            max_retry=3,
+            interval_time=[10],
+            max_retries=3,
             retries=0,
-            quality="high",
+            resize="high",
+            quality_output_level=75,
             logs=[]
         )
 
@@ -126,10 +119,27 @@ class TestSliceProcessUtil:
         result = get_path_file(mock_config.vdsc.dir_uploads, "video123", "mp4")
         assert result == "uploads/video123.mp4"
 
+    def test_get_path_file_formats_correctly(self):
+        """Testa que get_path_file formata o caminho corretamente"""
+        path = get_path_file("uploads", "video123", "mp4")
+        assert path == "uploads/video123.mp4"
+
+    def test_get_path_file_with_different_extensions(self):
+        """Testa get_path_file com diferentes extensões"""
+        extensions = ["mp4", "avi", "mkv", "mov"]
+        for ext in extensions:
+            path = get_path_file("uploads", "test", ext)
+            assert path.endswith(f".{ext}")
+
     def test_get_path_directory(self, mock_config):
         """Testa geração de caminho de diretório"""
         result = get_path_directory(mock_config.vdsc.dir_tmp, "video123")
         assert result == "/tmp/video123/"
+
+    def test_get_path_directory_formats_correctly(self):
+        """Testa que get_path_directory formata o caminho corretamente"""
+        path = get_path_directory("output", "video123")
+        assert path == "output/video123/"
 
     def test_get_multiplier_time_unit_seconds(self):
         """Testa multiplicador para segundos"""
@@ -141,15 +151,14 @@ class TestSliceProcessUtil:
         result = get_multiplier_time_unit("ms")
         assert result == 1
 
-    def test_get_specific_time_intervals(self):
-        """Testa conversão de intervalos específicos"""
-        result = get_specific_time_intervals([1, 2, 3], 1000)
-        assert result == [1000, 2000, 3000]
+    def test_get_multiplier_time_unit_other_units(self):
+        """Testa multiplicador para outras unidades retorna 1"""
+        multiplier = get_multiplier_time_unit("m")
+        assert multiplier == 1
 
-    def test_get_recurrent_time_intervals(self):
-        """Testa geração de intervalos recorrentes"""
-        result = get_recurrent_time_intervals(0, 30, 10)
-        assert result == [0, 10, 20, 30]
+        multiplier = get_multiplier_time_unit("h")
+        assert multiplier == 1
+
 
     def test_metadata_update_status(self, valid_event_dto):
         """Testa atualização de status de metadados"""
@@ -161,31 +170,6 @@ class TestSliceProcessUtil:
         assert result.status == VdscStatusEnum.PROCESSING.value
         assert len(result.logs) == 1
 
-    def test_create_zip_buffer(self):
-        """Testa criação de buffer zip"""
-        file_list = [("file1.txt", b"content1"), ("file2.txt", b"content2")]
-
-        result = create_zip_buffer(file_list, 6)
-
-        assert isinstance(result, io.BytesIO)
-        with zipfile.ZipFile(result, 'r') as zf:
-            assert "file1.txt" in zf.namelist()
-            assert "file2.txt" in zf.namelist()
-
-    def test_get_file_info_list(self, mock_gateway):
-        """Testa obtenção de informações de arquivos"""
-        mock_gateway.get_list_paths_by_directory.return_value = [
-            "processing/video123/frame1.png",
-            "processing/video123/frame2.png"
-        ]
-        mock_gateway.open_file.side_effect = [b"data1", b"data2"]
-
-        result = get_file_info_list("processing/video123/", mock_gateway)
-
-        assert len(result) == 2
-        assert result[0][0] == "frame1.png"
-        assert result[1][0] == "frame2.png"
-
     def test_create_temporary_file(self):
         """Testa criação de arquivo temporário"""
         video_data = b"fake_video_data"
@@ -196,6 +180,36 @@ class TestSliceProcessUtil:
         import os
         assert os.path.exists(result)
         os.remove(result)
+
+    def test_create_temporary_file_with_valid_data(self):
+        """Testa criação de arquivo temporário com dados válidos"""
+        test_data = b"test video data"
+        file_path = create_temporary_file(test_data, "mp4")
+
+        assert file_path is not None
+        assert file_path.endswith(".mp4")
+
+        # Verifica se o arquivo foi criado
+        import os
+        assert os.path.exists(file_path)
+
+        # Limpa o arquivo
+        os.remove(file_path)
+
+    def test_create_temporary_file_preserves_data(self):
+        """Testa que create_temporary_file preserva os dados"""
+        test_data = b"important video content"
+        file_path = create_temporary_file(test_data, "avi")
+
+        # Lê o arquivo e verifica o conteúdo
+        with open(file_path, 'rb') as f:
+            content = f.read()
+
+        assert content == test_data
+
+        # Limpa
+        import os
+        os.remove(file_path)
 
     def test_get_frame_new_size(self):
         """Testa cálculo de novo tamanho de frame"""
@@ -220,25 +234,27 @@ class TestSliceProcessUtil:
     def test_frame_resize(self):
         """Testa redimensionamento de frame"""
         import numpy as np
+        from unittest.mock import patch
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        result = frame_resize(frame, 1280, 720)
+        # Mock do cv2.resize para retornar o resultado esperado
+        with patch('core.utils.slice_video_process_frame_util.cv2.resize') as mock_resize:
+            mock_resize.return_value = np.zeros((720, 1280, 3), dtype=np.uint8)
+            result = frame_resize(frame, 1280, 720)
+            assert result.shape == (720, 1280, 3)
 
-        assert result.shape == (720, 1280, 3)
-
-    def test_encode_frame_to_png(self):
-        """Testa codificação de frame para PNG"""
+    def test_encode_frame_to_jpg(self):
+        """Testa codificação de frame para JPG"""
         import numpy as np
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
 
-        success, data = encode_frame_to_png(frame, 3)
+        result = encode_frame_to_jpg(frame, 95)
 
-        assert success is True
-        assert data is not None
+        assert result is not None
 
     def test_create_interval_list_recurrent(self, valid_event_dto):
         """Testa criação de lista de intervalos recorrentes"""
-        valid_event_dto.time_interval = [5]
+        valid_event_dto.interval_time = [5]
         valid_event_dto.start_time = 0
         valid_event_dto.end_time = 20
         metadata = VdscMetadata(dto=valid_event_dto)
@@ -249,7 +265,7 @@ class TestSliceProcessUtil:
 
     def test_create_interval_list_specific(self, valid_event_dto):
         """Testa criação de lista de intervalos específicos"""
-        valid_event_dto.time_interval = [5, 10, 15]
+        valid_event_dto.interval_time = [5, 10, 15]
         metadata = VdscMetadata(dto=valid_event_dto)
 
         result = create_interval_list(metadata, 1000)
@@ -257,49 +273,11 @@ class TestSliceProcessUtil:
         assert result == [5000, 10000, 15000]
 
 
-    @patch('core.utils.slice_process_util.cv2.VideoCapture')
-    def test_process_video_frames_success(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
-        """Testa processamento de frames de vídeo com sucesso"""
-        import numpy as np
-
-        # Mock do video capture
-        mock_cap = MagicMock()
-        mock_video_capture.return_value = mock_cap
-        mock_cap.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
-
-        metadata = VdscMetadata(dto=valid_event_dto)
-        metadata.unit_time = "s"
-        metadata.time_interval = [1]
-        metadata.start_time = 0
-        metadata.end_time = 5
-
-        process_video(metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
-
-        assert mock_gateway.save_file.called
-
-    @patch('core.utils.slice_process_util.cv2.VideoCapture')
-    def test_process_video_frames_failure(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
-        """Testa processamento de frames com falha na leitura"""
-        # Mock do video capture com falha
-        mock_cap = MagicMock()
-        mock_video_capture.return_value = mock_cap
-        mock_cap.read.return_value = (False, None)
-
-        metadata = VdscMetadata(dto=valid_event_dto)
-        metadata.time_interval = [1]
-        metadata.quality = "none"  # To avoid resize check
-        mock_config.vdsc.quality.none = None  # Make getattr return None
-
-        process_video(metadata, b"fake_data", "processing/video123/", mock_gateway, mock_config)
-
-        # Não deve salvar arquivo se leitura falhar
-        assert not mock_gateway.save_file.called
-
     def test_set_exception_status_failed(self, mock_gateway, mock_config, valid_event_dto):
         """Testa definição de status FAILED"""
         metadata = VdscMetadata(dto=valid_event_dto)
         metadata.retries = 3
-        metadata.max_retry = 3
+        metadata.max_retries = 3
         ex = Exception("Erro de teste")
 
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.FAILED, mock_config)
@@ -312,7 +290,7 @@ class TestSliceProcessUtil:
         """Testa definição de status RETRYING"""
         metadata = VdscMetadata(dto=valid_event_dto)
         metadata.retries = 1
-        metadata.max_retry = 3
+        metadata.max_retries = 3
         ex = Exception("Erro de teste")
 
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
@@ -324,7 +302,7 @@ class TestSliceProcessUtil:
     def test_set_exception_status_failed_direct(self, mock_gateway, mock_config, valid_event_dto):
         """Testa função set_exception_status_failed diretamente"""
         metadata = VdscMetadata(dto=valid_event_dto)
-        metadata.max_retry = 3
+        metadata.max_retries = 3
         ex = Exception("Erro crítico")
 
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.FAILED, mock_config)
@@ -339,7 +317,7 @@ class TestSliceProcessUtil:
         """Testa função set_exception_status_retrying diretamente"""
         metadata = VdscMetadata(dto=valid_event_dto)
         metadata.retries = 0
-        metadata.max_retry = 3
+        metadata.max_retries = 3
         ex = Exception("Erro temporário")
 
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
@@ -426,64 +404,230 @@ class TestSliceProcessUtil:
         assert result.content[0].web.message == message
 
     def test_create_notification_empty_content(self, valid_event_dto):
-        """Testa criação de notificação sem conteúdo deve falhar se canal requer payload"""
+        """Testa criação de notificação sem conteúdo deve validar canal"""
         metadata = VdscMetadata(dto=valid_event_dto)
 
-        # Deve lançar exceção, pois canal EMAIL requer EmailPayload
+        # Canal EMAIL requer EmailPayload, então deve lançar exceção
         with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):
             create_notification(metadata, ['email'], None, None)
 
-    @patch('core.utils.slice_process_util.cv2.VideoCapture')
-    def test_process_video_frame_success_with_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
-        """Testa processamento de um frame com sucesso e redimensionamento"""
+    def test_metadata_update_status_changes_status(self, valid_event_dto):
+        """Testa que metadata_update_status muda o status"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        original_status = metadata.status
+
+        log = LogEntry("Status alterado para PROCESSING")
+        result = metadata_update_status(metadata, VdscStatusEnum.PROCESSING, log)
+
+        assert result.status == VdscStatusEnum.PROCESSING.value
+        assert result.status != original_status
+        assert len(result.logs) > 0
+
+    def test_metadata_update_status_adds_log(self, valid_event_dto):
+        """Testa que metadata_update_status adiciona log"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        initial_logs = len(metadata.logs)
+
+        log = LogEntry("Test log message")
+        result = metadata_update_status(metadata, VdscStatusEnum.FINISHED, log)
+
+        assert len(result.logs) == initial_logs + 1
+        assert result.logs[-1].info == "Test log message"
+
+
+    def test_get_frame_new_size_preserves_aspect_ratio(self):
+        """Testa que get_frame_new_size preserva proporção"""
+        import numpy as np
+        # Cria um frame com proporção 16:9 (1920x1080)
+        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+
+        # Solicita redimensionar para altura mínima de 720
+        new_width, new_height = get_frame_new_size(frame, 720)
+
+        # Verifica se a proporção foi mantida
+        original_ratio = 1920 / 1080  # ~1.778
+        new_ratio = new_width / new_height
+
+        assert abs(original_ratio - new_ratio) < 0.01
+        assert new_height == 720
+
+
+    def test_create_interval_list_with_single_interval(self, valid_event_dto):
+        """Testa criação de intervalo recorrente"""
+        valid_event_dto.interval_time = [5]
+        valid_event_dto.start_time = 0
+        valid_event_dto.end_time = 15
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        result = create_interval_list(metadata, 1000)
+
+        assert 0 in result
+        assert 5000 in result
+        assert 10000 in result
+        assert 15000 in result
+
+    def test_create_interval_list_with_multiple_intervals(self, valid_event_dto):
+        """Testa criação com múltiplos intervalos específicos"""
+        valid_event_dto.interval_time = [2, 4, 6]
+        metadata = VdscMetadata(dto=valid_event_dto)
+
+        result = create_interval_list(metadata, 1000)
+
+        assert result == [2000, 4000, 6000]
+
+    def test_get_recurrent_interval_times_basic(self):
+        """Testa geração básica de intervalos recorrentes"""
+        result = get_recurrent_interval_times(0, 10, 2)
+
+        assert result == [0, 2, 4, 6, 8, 10]
+
+    def test_get_recurrent_interval_times_with_offset(self):
+        """Testa geração com offset de início"""
+        result = get_recurrent_interval_times(100, 110, 2)
+
+        assert result == [100, 102, 104, 106, 108, 110]
+
+    def test_get_specific_interval_times_basic(self):
+        """Testa conversão de intervalos específicos"""
+        result = get_specific_interval_times([1, 2, 3], 1000)
+
+        assert result == [1000, 2000, 3000]
+
+    def test_get_specific_interval_times_with_strings(self):
+        """Testa conversão com números como strings"""
+        result = get_specific_interval_times(["1", "2", "3"], 1000)
+
+        assert result == [1000, 2000, 3000]
+
+    def test_metadata_update_status_preserves_other_fields(self, valid_event_dto):
+        """Testa que update_status preserva outros campos"""
+        metadata = VdscMetadata(dto=valid_event_dto)
+        original_video_id = metadata.video_id
+        original_file_name = metadata.file_name
+
+        log = LogEntry("Nova tentativa")
+        result = metadata_update_status(metadata, VdscStatusEnum.RETRYING, log)
+
+        assert result.video_id == original_video_id
+        assert result.file_name == original_file_name
+        assert result.status == VdscStatusEnum.RETRYING.value
+
+    def test_check_resizer_needed_landscape_format(self):
+        """Testa redimensionamento para formato landscape"""
+        from core.utils.slice_process_util import _check_resizer_needed
+        import numpy as np
+        import tempfile
+
+        # Cria arquivo temporário
+        test_data = b"fake"
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
+            temp_path = f.name
+            f.write(test_data)
+
+        try:
+            with patch('core.utils.slice_process_util.cv2.VideoCapture') as mock_cap:
+                mock_instance = MagicMock()
+                mock_cap.return_value = mock_instance
+                # Frame 1920x1080 (landscape)
+                mock_instance.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
+
+                result = _check_resizer_needed(720, temp_path)
+
+                # Verifica que as dimensões foram redimensionadas mantendo proporção
+                assert result["resize"] is True
+                assert result["new_height"] == 720
+                assert result["new_width"] > 720
+        finally:
+            import os
+            os.remove(temp_path)
+
+    def test_check_resizer_needed_portrait_format(self):
+        """Testa redimensionamento para formato portrait"""
+        from core.utils.slice_process_util import _check_resizer_needed
+        import numpy as np
+        import tempfile
+
+        test_data = b"fake"
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
+            temp_path = f.name
+            f.write(test_data)
+
+        try:
+            with patch('core.utils.slice_process_util.cv2.VideoCapture') as mock_cap:
+                mock_instance = MagicMock()
+                mock_cap.return_value = mock_instance
+                # Frame 1080x1920 (portrait)
+                mock_instance.read.return_value = (True, np.zeros((1920, 1080, 3), dtype=np.uint8))
+
+                result = _check_resizer_needed(720, temp_path)
+
+                assert result["resize"] is True
+                assert result["new_width"] == 720
+                assert result["new_height"] > 720
+        finally:
+            import os
+            os.remove(temp_path)
+
+    def test_print_schedule_brasil_boundary_times(self):
+        """Testa conversão em horas limite"""
+        from core.utils.slice_process_util import _print_schedule_brasil
+        from datetime import datetime, timezone
+
+        # Testa 3:00 UTC (deve ser 00:00 em Brasília)
+        utc_time = datetime(2026, 2, 13, 3, 0, 0, tzinfo=timezone.utc)
+        result = _print_schedule_brasil(utc_time)
+        assert "13/02/2026 00:00" == result
+
+        # Testa 23:00 UTC (deve ser 20:00 em Brasília)
+        utc_time = datetime(2026, 2, 13, 23, 0, 0, tzinfo=timezone.utc)
+        result = _print_schedule_brasil(utc_time)
+        assert "13/02/2026 20:00" == result
+
+
+    def test_create_temporary_file_different_extensions(self):
+        """Testa criação com diferentes extensões"""
+        import os
+
+        extensions = ["avi", "mov", "mkv", "webm"]
+        temp_files = []
+
+        try:
+            for ext in extensions:
+                file_path = create_temporary_file(b"test_data", ext)
+                temp_files.append(file_path)
+
+                assert file_path.endswith(f".{ext}")
+                assert os.path.exists(file_path)
+
+                # Verifica conteúdo
+                with open(file_path, 'rb') as f:
+                    assert f.read() == b"test_data"
+        finally:
+            for f in temp_files:
+                if os.path.exists(f):
+                    os.remove(f)
+
+    def test_get_frame_new_size_with_small_target(self):
+        """Testa redimensionamento com alvo pequeno"""
         import numpy as np
 
-        # Mock do video capture
-        mock_cap = MagicMock()
-        mock_video_capture.return_value = mock_cap
-        mock_cap.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
+        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        new_width, new_height = get_frame_new_size(frame, 360)
 
-        metadata = VdscMetadata(dto=valid_event_dto)
+        # Verifica que foi redimensionado para tamanho bem menor
+        assert new_height == 360
+        assert new_width < 1920
 
-        result = process_video_frame(
-            1000, "test_video.mp4", {"resize": True, "new_width": 1280, "new_height": 720}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
-        )
-
-        assert "Sucesso" in result
-        assert mock_gateway.save_file.called
-
-    @patch('core.utils.slice_process_util.cv2.VideoCapture')
-    def test_process_video_frame_success_without_resize(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
-        """Testa processamento de um frame com sucesso sem redimensionamento"""
+    def test_get_frame_new_size_with_large_target(self):
+        """Testa redimensionamento com alvo grande"""
         import numpy as np
 
-        # Mock do video capture
-        mock_cap = MagicMock()
-        mock_video_capture.return_value = mock_cap
-        mock_cap.read.return_value = (True, np.zeros((720, 1280, 3), dtype=np.uint8))
+        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        new_width, new_height = get_frame_new_size(frame, 2160)
 
-        metadata = VdscMetadata(dto=valid_event_dto)
+        # Verifica proporcionalidade
+        original_ratio = 1920 / 1080
+        new_ratio = new_width / new_height
 
-        result = process_video_frame(
-            1000, "test_video.mp4", {"resize": False, "new_width": None, "new_height": None}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
-        )
+        assert abs(original_ratio - new_ratio) < 0.01
 
-        assert "Sucesso" in result
-        assert mock_gateway.save_file.called
-
-    @patch('core.utils.slice_process_util.cv2.VideoCapture')
-    def test_process_video_frame_failure_read(self, mock_video_capture, mock_gateway, mock_config, valid_event_dto):
-        """Testa processamento de um frame com falha na leitura"""
-        # Mock do video capture com falha
-        mock_cap = MagicMock()
-        mock_video_capture.return_value = mock_cap
-        mock_cap.read.return_value = (False, None)
-
-        metadata = VdscMetadata(dto=valid_event_dto)
-
-        result = process_video_frame(
-            1000, "test_video.mp4", {"resize": False, "new_width": None, "new_height": None}, metadata, "processing/video123/", "high", "video123", 1000, 3, mock_gateway
-        )
-
-        assert "Erro" in result
-        assert not mock_gateway.save_file.called

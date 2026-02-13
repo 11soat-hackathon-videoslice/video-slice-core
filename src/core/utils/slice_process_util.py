@@ -1,25 +1,24 @@
-from concurrent.futures.thread import ThreadPoolExecutor
-from itertools import repeat
-from typing import Optional
+import logging
+import queue
+import tempfile
+import threading
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 
-import io
-import logging
-import tempfile
-import zipfile
-
 import cv2
+import time
 
-from pathlib import Path
 from core.interfaces import SliceGatewayInferface
+from .schedule_event_util import get_event_schedule_timestamp
+from .slice_video_process_frame_util import process_video_frame
 from ..domain.notification import EmailPayload, WebPayload, Notification, NotificationContent
-from ..dtos.vdsc_config_dto import VdscConfigDTO
 from ..domain.vdsc_metadata import VdscMetadata, LogEntry
+from ..dtos.vdsc_config_dto import VdscConfigDTO
 from ..enums.email_template_enum import EmailTemplateEnum
 from ..enums.notification_channels_enum import NotificationChannelsEnum
 from ..enums.vdsc_status_enum import VdscStatusEnum
-from .schedule_event_util import get_event_schedule_timestamp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,13 +36,13 @@ def create_interval_list(vdsc_metadata, time_unit_multiplier):
     logger.info(f"start_time: {start_time}")
     end_time = int(vdsc_metadata.end_time * time_unit_multiplier)
     logger.info(f"end_time: {end_time}")
-    interval = int(vdsc_metadata.time_interval[0]) * int(time_unit_multiplier)
+    interval = int(vdsc_metadata.interval_time[0]) * int(time_unit_multiplier)
     logger.info(f"interval: {interval}")
 
-    if len(vdsc_metadata.time_interval) == 1:
-        time_interval_list = get_recurrent_time_intervals(start_time, end_time, interval)
+    if len(vdsc_metadata.interval_time) == 1:
+        time_interval_list = get_recurrent_interval_times(start_time, end_time, interval)
     else:
-        time_interval_list = get_specific_time_intervals(vdsc_metadata.time_interval, int(time_unit_multiplier))
+        time_interval_list = get_specific_interval_times(vdsc_metadata.interval_time, int(time_unit_multiplier))
     return time_interval_list
 
 def create_notification(metadata: VdscMetadata, channels: list[str],
@@ -81,55 +80,14 @@ def create_web_notification(metadata: VdscMetadata, message: str) -> WebPayload:
         is_read=False
     )
 
-def create_zip_buffer(file_info_list: list[tuple[str, bytes]], compression_level: int) -> io.BytesIO:
-    """Cria um buffer zip com os arquivos fornecidos"""
-    buffer_zip = io.BytesIO()
-    with zipfile.ZipFile(buffer_zip, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=compression_level) as zip_file:
-        for file_name, file_data in file_info_list:
-            zip_file.writestr(file_name, file_data)
-    buffer_zip.seek(0)
-    return buffer_zip
-
-
-def encode_frame_to_png(frame, png_compression: int):
-    """Codifica frame para formato PNG com nível de compressão especificado"""
-    return cv2.imencode('.png', frame, [cv2.IMWRITE_PNG_COMPRESSION, png_compression])
-
-
-def frame_resize(frame, target_width: int, target_height: int):
-    """Redimensiona o frame para as dimensões especificadas"""
-    return cv2.resize(frame, (target_width, target_height), interpolation=cv2.INTER_AREA)
-
-
-def get_file_info_list(output_directory, gateway):
-    """Retorna uma lista de tuplas (nome_arquivo, dados_arquivo) do diretório informado"""
-    file_list = gateway.get_list_paths_by_directory(output_directory)
-    file_info_list = []
-    for file_path in file_list:
-        file_name = Path(file_path).name
-        file_data = gateway.open_file(file_path)
-        file_info_list.append((file_name, file_data))
-    return file_info_list
-
-
-def get_frame_size(frame, target_height: int):
-    """Obtém o tamanho ajustado do frame mantendo proporção"""
-    original_h, original_w = frame.shape[:2]
-    if original_h <= target_height:
-        return frame
-    ratio = target_height / float(original_h)
-    target_width = int(original_w * ratio)
-    return target_height, target_width
-
-
 def get_multiplier_time_unit(time_unit: str) -> int:
     """Retorna multiplicador para conversão de unidade de tempo"""
     return 1000 if time_unit == 's' else 1
 
 
-def get_path_file(prefix_path: str, video_name, extension_file) -> str:
+def get_path_file(prefix_path: str, file_name: str, file_extension) -> str:
     """Retorna o caminho completo do arquivo"""
-    return f"{prefix_path}/{video_name}.{extension_file}"
+    return f"{prefix_path}/{file_name}.{file_extension}"
 
 
 def get_path_directory(prefix_path: str, video_id) -> str:
@@ -137,7 +95,7 @@ def get_path_directory(prefix_path: str, video_id) -> str:
     return f"{prefix_path}/{video_id}/"
 
 
-def get_recurrent_time_intervals(start_time: int, end_time: int, interval: int):
+def get_recurrent_interval_times(start_time: int, end_time: int, interval: int):
     """Gera lista de intervalos de tempo recorrentes"""
     logger.info("Gerando intervalos de tempo recorrentes")
     current_time = start_time
@@ -149,7 +107,7 @@ def get_recurrent_time_intervals(start_time: int, end_time: int, interval: int):
     return time_interval_list
 
 
-def get_specific_time_intervals(time_intervals, multiplier: int) -> list[int]:
+def get_specific_interval_times(time_intervals, multiplier: int) -> list[int]:
     """Converte intervalos de tempo específicos para milissegundos"""
     logger.info("Convertendo intervalos de tempo específicos para milissegundos")
     return [int(time) * int(multiplier) for time in time_intervals]
@@ -190,87 +148,56 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
     time_unit_multiplier = get_multiplier_time_unit(vdsc_metadata.unit_time)
     logger.debug(f"time_unit_multiplier: {time_unit_multiplier}")
 
-    video_temp_path = create_temporary_file(video_data, vdsc_metadata.extension_file)
+    video_temp_path = create_temporary_file(video_data, vdsc_metadata.file_extension)
     logger.debug(f"video_temp_path: {video_temp_path}")
 
-    output_quality = vdsc_metadata.quality
-    logger.debug(f"output_quality: {vdsc_metadata.quality}:{output_quality}")
-
-    png_compression = config.vdsc.png_compression_level
-    logger.debug(f"png_compression: {png_compression}")
+    output_quality = vdsc_metadata.resize
+    logger.debug(f"output_quality: {vdsc_metadata.resize}:{output_quality}")
 
     interval_list = create_interval_list(vdsc_metadata, time_unit_multiplier)
 
     try:
-        if getattr(config.vdsc.quality, output_quality, None) is not None:
-            vidcap_check = cv2.VideoCapture(video_temp_path)
-            #Obtendo primeiro frame do video para obter dimensões atuais
-            vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
-            _, frame = vidcap_check.read()
-            new_width, new_height = get_frame_new_size(frame, getattr(config.vdsc.quality, output_quality, None))
-            resize = True
-            resize_params = {'resize':resize, 'new_width':new_width, 'new_height':new_height}
-            logger.info(f"Configurações de redimensionamento: {resize_params}")
-            vidcap_check.release()
+        if getattr(config.vdsc.resize, output_quality, None) is not None:
+            _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
 
+        save_queue = queue.Queue(maxsize=max_workers * 4) # Capacidade maior para não gerar gargalo de I/O
+        save_file_thread = threading.Thread(target=_save_frames_from_queue, args=(gateway, save_queue), daemon=True)
+        save_file_thread.start()
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            results = list(executor.map(process_video_frame,
-                                   interval_list,
-                                   repeat(video_temp_path),
-                                   repeat(resize_params),
-                                   repeat(vdsc_metadata),
-                                   repeat(video_output_directory),
-                                   repeat(output_quality),
-                                   repeat(video_id),
-                                   repeat(time_unit_multiplier),
-                                   repeat(png_compression),
-                                   repeat(gateway)))
+        start_total = time.perf_counter()
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(process_video_frame,
+                                   interval,
+                                    video_temp_path,
+                                    resize_params,
+                                   vdsc_metadata,
+                                   video_output_directory,
+                                   output_quality,
+                                   video_id,
+                                   time_unit_multiplier)
+                                   for interval in interval_list
+                       ]
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    if save_queue.full():
+                        logger.warning("ALERTA: Fila de escrita cheia! O disco é o gargalo.")
+                    save_queue.put(result)
+                except Exception as e:
+                    logger.error(f"Erro ao processar frame: {str(e)}", exc_info=True)
 
-        logger.info(f"Processamento realizado com sucesso: {results}")
+        save_queue.join()
+        save_queue.put(None)
+        save_file_thread.join()
+        total_duration  = time.perf_counter() - start_total
+        logger.info(f"Tempo total de execução: {total_duration:.2f} segundos")
+        logger.info(f"Eficiência Média por frame: {(total_duration * max_workers / len(interval_list)):.2f} segundos")
 
     except Exception as e:
         logger.error(f"Erro ao processar frames do vídeo ID {video_id}: {str(e)}", exc_info=e)
         raise
 
-def process_video_frame(time_ms: int, video_temp_path: str, resize_params: dict,
-                        vdsc_metadata: VdscMetadata, video_output_directory: str, output_quality: str,
-                        video_id: str, time_unit_multiplier: int, png_compression: int,
-                        gateway: SliceGatewayInferface):
 
-
-    vidcap = cv2.VideoCapture(video_temp_path)
-    file_output = None
-
-    try:
-        logger.info(f"Capturando frame no tempo(ms): {time_ms}")
-        vidcap.set(cv2.CAP_PROP_POS_MSEC, time_ms)
-        success, frame = vidcap.read()
-
-        if success and frame is not None:
-            if resize_params['resize']:
-                frame = frame_resize(frame, int(resize_params['new_width']), int(resize_params['new_height']))
-                logger.info(f"Frame redimensionado para: {resize_params['new_width']}x{resize_params['new_height']}")
-
-            #Gerando variáveis de output
-            suffix_time_file = f"{int(time_ms/time_unit_multiplier)}_{vdsc_metadata.unit_time}"
-            logger.info(f"suffix_time_file: {suffix_time_file}")
-            file_output = f"{video_output_directory}{video_id}_{output_quality}_{suffix_time_file}.png"
-            logger.info(f"file_output: {file_output}")
-
-            #Gerando encode do arquivo
-            success, png_data = encode_frame_to_png(frame, png_compression)
-            #Salvando arquivo no storage
-            gateway.save_file(file_path=file_output, data=png_data.tobytes())
-            logger.info(f"Frame salvo com sucesso em: {file_output}")
-
-        else:
-            logger.warning(f"Falha ao ler frame no tempo {time_ms}ms")
-
-        return f"Sucesso: {file_output}" if success else f"Erro no tempo {time_ms}"
-
-    finally:
-        vidcap.release()
 
 def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, config: VdscConfigDTO):
     match new_status:
@@ -281,8 +208,8 @@ def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_met
     return None
 
 def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum):
-    message = f" {vdsc_metadata.video_id} - Processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.extension_file} falhou após {vdsc_metadata.max_retry} tentativas: {str(ex)}."
-    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {vdsc_metadata.max_retry} tentativas."))
+    message = f" {vdsc_metadata.video_id} - Processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension} falhou após {vdsc_metadata.max_retries} tentativas: {str(ex)}."
+    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {vdsc_metadata.max_retries} tentativas."))
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.FAILED))
     return vdsc_metadata, message
 
@@ -291,16 +218,42 @@ def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception,
     vdsc_metadata.retries += 1
 
     schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
-    message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.extension_file}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retry} agendada para {print_schedule_brasil(schedule_timestamp)}."
+    message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retries} agendada para {_print_schedule_brasil(schedule_timestamp)}."
     vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
     gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules.to_dict())
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.UPDATE_STATUS))
     return vdsc_metadata, message
 
-def print_schedule_brasil(schedule_time: datetime):
+def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:
+    vidcap_check = cv2.VideoCapture(video_temp_path)
+    #Obtendo primeiro frame do video para obter dimensões atuais
+    vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
+    _, frame = vidcap_check.read()
+    new_width, new_height = get_frame_new_size(frame, min_size)
+    resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height}
+    logger.info(f"Configurações de redimensionamento: {resize_params}")
+    vidcap_check.release()
+    return resize_params
+
+def _print_schedule_brasil(schedule_time: datetime):
     from datetime import timedelta, timezone
     # Converte de UTC para o fuso de Brasília (UTC-3)
     fuso_brasilia = timezone(timedelta(hours=-3))
     horario_brasil = schedule_time.astimezone(fuso_brasilia)
     # Formata no padrão brasileiro
     return horario_brasil.strftime('%d/%m/%Y %H:%M')
+
+def _save_frames_from_queue(gateway: SliceGatewayInferface, save_queue: queue.Queue):
+    while True:
+        result = save_queue.get()
+        if result is None:
+            break
+        try:
+            if result.get("success") and result.get("data"):
+                # Salva o arquivo localmente
+                gateway.save_file(result.get("file_output"), result.get("data"))
+                logger.info(f"Frame salvo com sucesso: {result.get('file_output')}")
+        except Exception as e:
+            logger.error(f"Erro ao salvar frame: {str(e)}", exc_info=True)
+        finally:
+            save_queue.task_done()
