@@ -210,6 +210,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
             new_width, new_height = get_frame_new_size(frame, getattr(config.vdsc.quality, output_quality, None))
             resize = True
             resize_params = {'resize':resize, 'new_width':new_width, 'new_height':new_height}
+            logger.info(f"Configurações de redimensionamento: {resize_params}")
             vidcap_check.release()
 
 
@@ -248,7 +249,7 @@ def process_video_frame(time_ms: int, video_temp_path: str, resize_params: dict,
 
         if success and frame is not None:
             if resize_params['resize']:
-                frame = frame_resize(frame, resize_params['new_width'], resize_params['new_height'])
+                frame = frame_resize(frame, int(resize_params['new_width']), int(resize_params['new_height']))
                 logger.info(f"Frame redimensionado para: {resize_params['new_width']}x{resize_params['new_height']}")
 
             #Gerando variáveis de output
@@ -288,10 +289,18 @@ def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, v
 def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, config: VdscConfigDTO, new_status: VdscStatusEnum):
     """Define status como RETRYING e agenda nova tentativa"""
     vdsc_metadata.retries += 1
-    message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.extension_file}: {str(ex)}. Criando tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retry}."
-    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(message))
+
     schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
+    message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.extension_file}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retry} agendada para {print_schedule_brasil(schedule_timestamp)}."
+    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
     gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules.to_dict())
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.UPDATE_STATUS))
     return vdsc_metadata, message
 
+def print_schedule_brasil(schedule_time: datetime):
+    from datetime import timedelta, timezone
+    # Converte de UTC para o fuso de Brasília (UTC-3)
+    fuso_brasilia = timezone(timedelta(hours=-3))
+    horario_brasil = schedule_time.astimezone(fuso_brasilia)
+    # Formata no padrão brasileiro
+    return horario_brasil.strftime('%d/%m/%Y %H:%M')

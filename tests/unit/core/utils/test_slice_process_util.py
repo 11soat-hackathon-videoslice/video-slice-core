@@ -318,7 +318,7 @@ class TestSliceProcessUtil:
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
 
         assert result_metadata.status == VdscStatusEnum.RETRYING.value
-        assert "Criando tentativa 2 de 3" in message
+        assert "Tentativa 2 de 3" in message
         assert mock_gateway.send_schedule_retry_event.called
 
     def test_set_exception_status_failed_direct(self, mock_gateway, mock_config, valid_event_dto):
@@ -345,8 +345,7 @@ class TestSliceProcessUtil:
         result_metadata, message = set_exception_status(mock_gateway, ex, metadata, VdscStatusEnum.RETRYING, mock_config)
 
         assert result_metadata.status == VdscStatusEnum.RETRYING.value
-        assert "Criando tentativa 1 de 3" in message
-        assert "Erro temporário" in message
+        assert "Tentativa 1 de 3" in message
         assert mock_gateway.send_schedule_retry_event.called
         assert mock_gateway.send_notification.called
 
