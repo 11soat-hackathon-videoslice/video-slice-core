@@ -140,7 +140,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
     """Processa os frames do vídeo e salva as imagens"""
     #Inicializando variáveis
     resize_params = {'resize':None, 'new_width':None, 'new_height':None}
-    max_workers = config.vdsc.max_workers
+    max_workers = int(config.vdsc.max_workers)
 
     video_id = vdsc_metadata.video_id
     logger.debug(f"video_id: {video_id}")

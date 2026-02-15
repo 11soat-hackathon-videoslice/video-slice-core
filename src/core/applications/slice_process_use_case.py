@@ -51,6 +51,7 @@ class SliceProcessUseCase:
             video_output_directory = get_path_directory(prefix_path=config.vdsc.dir_tmp, video_id=video_id)
             #Abrindo arquivo de video para processamento
             video_data = gateway.open_file(file_path=video_path)
+
             #Processamento de caputura de frames
             logger.info(f"Iniciando captura de imagens para o vídeo ID: {event.video_id}")
             process_video(vdsc_metadata, video_data, video_output_directory, gateway, config)
