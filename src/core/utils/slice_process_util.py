@@ -2,7 +2,7 @@ import logging
 import queue
 import tempfile
 import threading
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Optional
 from uuid import uuid4
@@ -165,7 +165,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
         save_file_thread.start()
 
         start_total = time.perf_counter()
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(process_video_frame,
                                    interval,
                                     video_temp_path,
