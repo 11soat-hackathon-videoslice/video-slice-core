@@ -40,10 +40,10 @@ def create_interval_list(vdsc_metadata, time_unit_multiplier):
     logger.info(f"interval: {interval}")
 
     if len(vdsc_metadata.interval_time) == 1:
-        time_interval_list = get_recurrent_interval_times(start_time, end_time, interval)
+        interval_time_list = get_recurrent_interval_times(start_time, end_time, interval)
     else:
-        time_interval_list = get_specific_interval_times(vdsc_metadata.interval_time, int(time_unit_multiplier))
-    return time_interval_list
+        interval_time_list = get_specific_interval_times(vdsc_metadata.interval_time, int(time_unit_multiplier))
+    return interval_time_list
 
 def create_notification(metadata: VdscMetadata, channels: list[str],
                         web_message: Optional[str] = None,
@@ -99,18 +99,18 @@ def get_recurrent_interval_times(start_time: int, end_time: int, interval: int):
     """Gera lista de intervalos de tempo recorrentes"""
     logger.info("Gerando intervalos de tempo recorrentes")
     current_time = start_time
-    time_interval_list = []
+    interval_time_list = []
     while current_time <= end_time:
-        time_interval_list.append(current_time)
+        interval_time_list.append(current_time)
         current_time += interval
-        logger.info(f"time_interval_list: {time_interval_list}")
-    return time_interval_list
+        logger.info(f"interval_time_list: {interval_time_list}")
+    return interval_time_list
 
 
-def get_specific_interval_times(time_intervals, multiplier: int) -> list[int]:
+def get_specific_interval_times(interval_times, multiplier: int) -> list[int]:
     """Converte intervalos de tempo específicos para milissegundos"""
     logger.info("Convertendo intervalos de tempo específicos para milissegundos")
-    return [int(time) * int(multiplier) for time in time_intervals]
+    return [int(time) * int(multiplier) for time in interval_times]
 
 
 def get_frame_new_size(frame, target_frame_min_size: int) -> tuple[ int, int]:

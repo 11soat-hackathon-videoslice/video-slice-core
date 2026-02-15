@@ -96,7 +96,7 @@ class VdscMetadataDTO:
         if self.start_time > self.end_time:
             raise ValueError("O campo 'start_time' não pode ser maior que 'end_time'")
 
-    def _validate_time_interval_list(self) -> None:
+    def _validate_interval_time_list(self) -> None:
         """Valida lista de intervalos de tempo"""
         if not isinstance(self.interval_time, list):
             raise ValueError("O campo 'interval_time' deve ser uma lista")
@@ -124,7 +124,7 @@ class VdscMetadataDTO:
         self._validate_numeric_fields()
         self._validate_quality_output_level()
         self._validate_time_range()
-        self._validate_time_interval_list()
+        self._validate_interval_time_list()
         self._validate_logs_list()
         return True
 

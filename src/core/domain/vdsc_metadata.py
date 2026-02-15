@@ -169,7 +169,7 @@ class VdscMetadata:
         dto = VdscMetadataDTO(
             video_id=data['videoId'],
             file_name=data['fileName'],
-            file_extension=data.get('fileExtension', data.get('extensionFile', 'mp4')),
+            file_extension=data['fileExtension'],
             status=data.get('status', VdscStatusEnum.UPLOADED.value),
             created=data.get('created'),
             user_id=data['userId'],
@@ -177,8 +177,8 @@ class VdscMetadata:
             unit_time=data.get('unitTime', 's'),
             start_time=data['startTime'],
             end_time=data['endTime'],
-            interval_time=data.get('intervalTime', data.get('timeInterval', [])),
-            max_retries=data.get('maxRetries', data.get('maxRetry', 3)),
+            interval_time=data['intervalTime'],
+            max_retries=data['maxRetries'],
             retries=data.get('retries', 0),
             resize=data.get('resize', VideoResize.HIGH.value),
             quality_output_level=data.get('qualityOutputLevel', 'high'),
@@ -191,5 +191,3 @@ class VdscMetadata:
         return (f"VideoSliceMetadata(video_id='{self.video_id}', "
                 f"file_name='{self.file_name}', status='{self.status}', "
                 f"user_id='{self.user_id}', retries={self.retries}/{self.max_retries})")
-
-

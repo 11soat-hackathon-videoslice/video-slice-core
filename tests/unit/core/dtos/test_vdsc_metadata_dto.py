@@ -99,7 +99,7 @@ class TestVdscMetadataDTO:
         with pytest.raises(Exception):
             valid_metadata_dto.validate()
 
-    def test_validate_empty_time_interval(self, valid_metadata_dto):
+    def test_validate_empty_interval_time(self, valid_metadata_dto):
         """Testa validação com interval_time vazio"""
         valid_metadata_dto.interval_time = []
         with pytest.raises(Exception):
@@ -253,19 +253,19 @@ class TestVdscMetadataDTO:
         with pytest.raises(ValueError, match="max_retries"):
             valid_metadata_dto.validate()
 
-    def test_validate_time_interval_not_list(self, valid_metadata_dto):
+    def test_validate_interval_time_not_list(self, valid_metadata_dto):
         """Testa validação com interval_time não sendo uma lista"""
         valid_metadata_dto.interval_time = "not a list"
         with pytest.raises(ValueError, match="interval_time"):
             valid_metadata_dto.validate()
 
-    def test_validate_time_interval_with_empty_string(self, valid_metadata_dto):
+    def test_validate_interval_time_with_empty_string(self, valid_metadata_dto):
         """Testa validação com interval_time contendo string vazia"""
         valid_metadata_dto.interval_time = ["00:00:00", ""]
         with pytest.raises(ValueError, match="interval_time"):
             valid_metadata_dto.validate()
 
-    def test_validate_time_interval_with_non_string(self, valid_metadata_dto):
+    def test_validate_interval_time_with_non_string(self, valid_metadata_dto):
         """Testa validação com interval_time contendo não-string"""
         valid_metadata_dto.interval_time = ["00:00:00", 123]
         with pytest.raises(ValueError, match="interval_time"):
