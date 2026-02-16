@@ -189,8 +189,8 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
         save_queue.put(None)
         save_file_thread.join()
         total_duration  = time.perf_counter() - start_total
-        logger.debug(f"Tempo total de execução: {total_duration:.2f} segundos")
-        logger.debug(f"Eficiência Média por frame: {(total_duration * max_workers / len(interval_list)):.2f} segundos")
+        logger.debug(f"{vdsc_metadata.video_id} - Tempo total de execução: {total_duration:.2f} segundos")
+        logger.debug(f"{vdsc_metadata.video_id} - Eficiência Média por frame: {(total_duration * max_workers / len(interval_list)):.2f} segundos")
 
     except Exception as e:
         logger.error(f"Erro ao processar frames do vídeo ID {video_id}: {str(e)}", exc_info=e)
