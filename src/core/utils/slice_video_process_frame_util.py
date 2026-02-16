@@ -38,7 +38,7 @@ def process_video_frame(time_ms: int, video_temp_path: str, resize_params: dict,
             logger.debug(f"file_output: {file_output}")
 
             #Gerando encode do arquivo
-            success, data = encode_frame_to_jpg(frame, 95)
+            success, data = encode_frame_to_jpg(frame, vdsc_metadata.quality_output_level)
 
             end = time.perf_counter()
             logger.debug(f"Tempo de processamento do frame: {end - start:.5f} segundos")##

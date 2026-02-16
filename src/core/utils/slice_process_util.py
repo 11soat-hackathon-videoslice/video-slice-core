@@ -159,7 +159,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
         if getattr(config.vdsc.resize, output_quality, None) is not None:
             _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
 
-        save_queue = queue.Queue(maxsize=max_workers * 4) # Capacidade maior para não gerar gargalo de I/O
+        save_queue = queue.Queue(maxsize=max_workers * 2) # Capacidade maior para não gerar gargalo de I/O
         save_file_thread = threading.Thread(target=_save_frames_from_queue, args=(gateway, save_queue), daemon=True)
         save_file_thread.start()
 
