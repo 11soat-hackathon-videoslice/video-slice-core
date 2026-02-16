@@ -29,12 +29,12 @@ def process_video_frame(time_ms: int, video_temp_path: str, resize_params: dict,
         if success and frame is not None:
             if resize_params['resize']:
                 frame = frame_resize(frame, int(resize_params['new_width']), int(resize_params['new_height']))
-                logger.info(f"Frame redimensionado para: {resize_params['new_width']}x{resize_params['new_height']}")
+                logger.debug(f"Frame redimensionado para: {resize_params['new_width']}x{resize_params['new_height']}")
 
             #Gerando variáveis de output
             suffix_time_file = f"{int(time_ms/time_unit_multiplier)}_{vdsc_metadata.unit_time}"
             logger.debug(f"suffix_time_file: {suffix_time_file}")
-            file_output = f"{video_output_directory}{video_id}_{output_quality}_{suffix_time_file}.png"
+            file_output = f"{video_output_directory}{video_id}_{output_quality}_{suffix_time_file}.jpg"
             logger.debug(f"file_output: {file_output}")
 
             #Gerando encode do arquivo

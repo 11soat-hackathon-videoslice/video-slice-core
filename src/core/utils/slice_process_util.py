@@ -102,7 +102,7 @@ def get_recurrent_interval_times(start_time: int, end_time: int, interval: int):
     while current_time <= end_time:
         interval_time_list.append(current_time)
         current_time += interval
-        logger.info(f"interval_time_list: {interval_time_list}")
+    logger.info(f"interval_time_list: {interval_time_list}")
     return interval_time_list
 
 
@@ -180,7 +180,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
                 try:
                     result = future.result()
                     if save_queue.full():
-                        logger.warning("ALERTA: Fila de escrita cheia! O disco é o gargalo.")
+                        logger.warning("ALERTA: Fila de escrita cheia!")
                     save_queue.put(result)
                 except Exception as e:
                     logger.error(f"Erro ao processar frame: {str(e)}", exc_info=True)
@@ -215,7 +215,6 @@ def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, v
 def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, config: VdscConfigDTO, new_status: VdscStatusEnum):
     """Define status como RETRYING e agenda nova tentativa"""
     vdsc_metadata.retries += 1
-
     schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
     message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retries} agendada para {_print_schedule_brasil(schedule_timestamp)}."
     vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
@@ -251,7 +250,7 @@ def _save_frames_from_queue(gateway: SliceGatewayInferface, save_queue: queue.Qu
             if result.get("success") and result.get("data"):
                 # Salva o arquivo localmente
                 gateway.save_file(result.get("file_output"), result.get("data"))
-                logger.info(f"Frame salvo com sucesso: {result.get('file_output')}")
+                logger.debug(f"Frame salvo com sucesso: {result.get('file_output')}")
         except Exception as e:
             logger.error(f"Erro ao salvar frame: {str(e)}", exc_info=True)
         finally:

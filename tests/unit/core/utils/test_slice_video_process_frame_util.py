@@ -80,7 +80,7 @@ class TestSliceVideoProcessFrameUtil:
         # Assertions
         assert result is not None
         assert result['success'] is True
-        assert result['file_output'] == "processing/video123/video123_high_1_s.png"
+        assert result['file_output'] == "processing/video123/video123_high_1_s.jpg"
         assert result['data'] is not None
         # Verifica que set foi chamado com tempo em ms
         mock_cap.set.assert_called_once()
@@ -119,7 +119,7 @@ class TestSliceVideoProcessFrameUtil:
         # Assertions
         assert result is not None
         assert result['success'] is True
-        assert result['file_output'] == "processing/video123/video123_medium_2_s.png"
+        assert result['file_output'] == "processing/video123/video123_medium_2_s.jpg"
         assert result['data'] is not None
         mock_cap.release.assert_called_once()
 
@@ -269,7 +269,7 @@ class TestSliceVideoProcessFrameUtil:
 
             # Assertions - suffix deve ser 5000 com unit_time "ms"
             assert result is not None
-            assert "video456_high_5000_ms.png" in result['file_output']
+            assert "video456_high_5000_ms.jpg" in result['file_output']
 
     @patch('core.utils.slice_video_process_frame_util.cv2.imencode')
     def test_encode_frame_to_jpg(self, mock_imencode):
