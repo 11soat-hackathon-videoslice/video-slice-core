@@ -73,8 +73,7 @@ class TestNotificationController:
         web = WebPayloadDto(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(

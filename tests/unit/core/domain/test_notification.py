@@ -46,31 +46,18 @@ class TestWebPayload:
         web = WebPayload(
             user_id="user123",
             message="Processamento concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         assert web.user_id == "user123"
         assert web.message == "Processamento concluído"
         assert web.timestamp == timestamp
-        assert web.is_read is False
-
-    def test_web_payload_with_read_status_created_successfully(self):
-        timestamp = datetime(2026, 1, 13, 0, 0, 0, tzinfo=UTC)
-        web = WebPayload(
-            user_id="user456",
-            message="Mensagem lida",
-            timestamp=timestamp,
-            is_read=True
-        )
-        assert web.is_read is True
 
     def test_web_payload_with_different_timestamp_created_successfully(self):
         timestamp = datetime(2026, 3, 15, 18, 30, 45, tzinfo=UTC)
         web = WebPayload(
             user_id="user789",
             message="Nova notificação",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         assert web.timestamp == timestamp
 
@@ -94,8 +81,7 @@ class TestNotificationContent:
         web = WebPayload(
             user_id="user456",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(web=web)
         assert content.web is not None
@@ -111,8 +97,7 @@ class TestNotificationContent:
         web = WebPayload(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(email=email, web=web)
         assert content.email is not None
@@ -174,8 +159,7 @@ class TestNotification:
         web = WebPayload(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(web=web)
         notification = Notification(
@@ -196,8 +180,7 @@ class TestNotification:
         web = WebPayload(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(email=email, web=web)
         notification = Notification(
@@ -215,8 +198,7 @@ class TestNotification:
         web = WebPayload(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(web=web)
         with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):

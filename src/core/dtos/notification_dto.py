@@ -37,14 +37,12 @@ class WebPayloadDto:
     user_id: str
     message: str
     timestamp: datetime
-    is_read: bool
 
     def to_dict(self) -> dict:
         return {
             "user_id": self.user_id,
             "message": self.message,
-            "timestamp": self.timestamp.isoformat(),
-            "is_read": self.is_read
+            "timestamp": self.timestamp.isoformat()
         }
 
     def to_json(self) -> str:
@@ -56,8 +54,7 @@ class WebPayloadDto:
         return WebPayloadDto(
             user_id=data['user_id'],
             message=data['message'],
-            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data['timestamp'], str) else data['timestamp'],
-            is_read=data['is_read']
+            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data['timestamp'], str) else data['timestamp']
         )
 
 @dataclass(frozen=True)
@@ -139,8 +136,7 @@ class NotificationDto:
                 web_dto = WebPayloadDto(
                     user_id=content.web.user_id,
                     message=content.web.message,
-                    timestamp=content.web.timestamp,
-                    is_read=content.web.is_read
+                    timestamp=content.web.timestamp
                 )
 
             content_dtos.append(NotificationContentDto(email=email_dto, web=web_dto))

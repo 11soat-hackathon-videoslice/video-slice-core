@@ -60,46 +60,41 @@ class TestWebPayloadDto:
         web_payload = WebPayloadDto(
             user_id="user123",
             message="Processamento concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         assert web_payload.user_id == "user123"
         assert web_payload.message == "Processamento concluído"
         assert web_payload.timestamp == timestamp
-        assert web_payload.is_read is False
 
     def test_web_payload_converted_to_dict_correctly(self):
         timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
         web_payload = WebPayloadDto(
             user_id="user123",
             message="Teste mensagem",
-            timestamp=timestamp,
-            is_read=True
+            timestamp=timestamp
         )
         result = web_payload.to_dict()
         assert result["user_id"] == "user123"
         assert result["message"] == "Teste mensagem"
         assert result["timestamp"] == "2026-02-08T12:00:00+00:00"
-        assert result["is_read"] is True
 
-    def test_web_payload_with_unread_status_converted_correctly(self):
+    def test_web_payload_with_long_message_converted_correctly(self):
         timestamp = datetime(2026, 1, 13, 0, 0, 0, tzinfo=UTC)
         web_payload = WebPayloadDto(
             user_id="user789",
             message="Nova notificação",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         result = web_payload.to_dict()
-        assert result["is_read"] is False
+        assert result["user_id"] == "user789"
+        assert result["message"] == "Nova notificação"
 
     def test_web_payload_converted_to_json_successfully(self):
         timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
         web_payload = WebPayloadDto(
             user_id="user123",
             message="Processamento concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         result = web_payload.to_json()
         assert isinstance(result, str)
@@ -107,7 +102,6 @@ class TestWebPayloadDto:
         assert parsed["user_id"] == "user123"
         assert parsed["message"] == "Processamento concluído"
         assert parsed["timestamp"] == "2026-02-08T12:00:00+00:00"
-        assert parsed["is_read"] is False
 
 
 @pytest.mark.unit
@@ -129,8 +123,7 @@ class TestNotificationContentDto:
         web = WebPayloadDto(
             user_id="user456",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         assert content.web is not None
@@ -146,8 +139,7 @@ class TestNotificationContentDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(email=email, web=web)
         assert content.email is not None
@@ -169,8 +161,7 @@ class TestNotificationContentDto:
         web = WebPayloadDto(
             user_id="user456",
             message="Teste",
-            timestamp=timestamp,
-            is_read=True
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         result = content.to_dict()
@@ -206,8 +197,7 @@ class TestNotificationContentDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(email=email, web=web)
         result = content.to_json()
@@ -266,8 +256,7 @@ class TestNotificationDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -287,8 +276,7 @@ class TestNotificationDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(email=email, web=web)
         notification = NotificationDto(
@@ -306,8 +294,7 @@ class TestNotificationDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         with pytest.raises(ValueError, match="Canal EMAIL requer EmailPayload"):
@@ -404,8 +391,7 @@ class TestNotificationDto:
         web = WebPayloadDto(
             user_id="user123",
             message="Concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(email=email, web=web)
         notification = NotificationDto(

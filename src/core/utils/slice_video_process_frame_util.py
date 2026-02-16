@@ -33,15 +33,15 @@ def process_video_frame(time_ms: int, video_temp_path: str, resize_params: dict,
 
             #Gerando variáveis de output
             suffix_time_file = f"{int(time_ms/time_unit_multiplier)}_{vdsc_metadata.unit_time}"
-            logger.info(f"suffix_time_file: {suffix_time_file}")
+            logger.debug(f"suffix_time_file: {suffix_time_file}")
             file_output = f"{video_output_directory}{video_id}_{output_quality}_{suffix_time_file}.png"
-            logger.info(f"file_output: {file_output}")
+            logger.debug(f"file_output: {file_output}")
 
             #Gerando encode do arquivo
             success, data = encode_frame_to_jpg(frame, 95)
 
             end = time.perf_counter()
-            logger.info(f"Tempo de processamento do frame: {end - start:.5f} segundos")##
+            logger.debug(f"Tempo de processamento do frame: {end - start:.5f} segundos")##
 
             return {
                 "success": success,

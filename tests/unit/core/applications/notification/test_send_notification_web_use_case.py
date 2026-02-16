@@ -48,8 +48,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user123",
             message="Processamento concluído",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -83,8 +82,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user456",
             message="Teste mensagem",
-            timestamp=timestamp,
-            is_read=True
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -104,8 +102,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user789",
             message="Nova notificação",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -123,8 +120,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user999",
             message="Notificação lida",
-            timestamp=timestamp,
-            is_read=True
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -143,8 +139,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(
@@ -163,14 +158,12 @@ class TestSendNotificationWebUseCase:
         web1 = WebPayloadDto(
             user_id="user123",
             message="Primeira notificação",
-            timestamp=timestamp1,
-            is_read=False
+            timestamp=timestamp1
         )
         web2 = WebPayloadDto(
             user_id="user456",
             message="Segunda notificação",
-            timestamp=timestamp2,
-            is_read=False
+            timestamp=timestamp2
         )
         content1 = NotificationContentDto(web=web1)
         content2 = NotificationContentDto(web=web2)
@@ -190,8 +183,7 @@ class TestSendNotificationWebUseCase:
         web = WebPayloadDto(
             user_id="user111",
             message=long_message,
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContentDto(web=web)
         notification = NotificationDto(

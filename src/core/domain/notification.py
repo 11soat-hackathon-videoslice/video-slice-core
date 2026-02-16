@@ -27,15 +27,13 @@ class WebPayload:
     user_id: str
     message: str
     timestamp: datetime
-    is_read: bool
 
     @staticmethod
     def from_dto(dto: 'WebPayloadDto') -> 'WebPayload':
         return WebPayload(
             user_id=dto.user_id,
             message=dto.message,
-            timestamp=dto.timestamp,
-            is_read=dto.is_read
+            timestamp=dto.timestamp
         )
 
 # Representa o conjunto de conteúdos possíveis

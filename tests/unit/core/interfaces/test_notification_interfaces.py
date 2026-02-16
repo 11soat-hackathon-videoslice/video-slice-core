@@ -47,7 +47,6 @@ class TestNotificationControllerInterface:
                 web=WebPayloadDto(
                     message="Test",
                     timestamp=datetime.now(),
-                    is_read=False,
                     user_id="user"
                 )
             )],

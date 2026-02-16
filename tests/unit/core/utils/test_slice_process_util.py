@@ -358,7 +358,6 @@ class TestSliceProcessUtil:
         assert result.user_id == "user123"
         assert result.message == message
         assert isinstance(result.timestamp, datetime)
-        assert result.is_read is False
 
     def test_create_notification_with_email_and_web(self, valid_event_dto):
         """Testa criação de notificação completa com email e web"""

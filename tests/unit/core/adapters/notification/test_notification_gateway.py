@@ -71,8 +71,7 @@ class TestNotificationGateway:
         web = WebPayload(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(web=web)
         notification = Notification(
@@ -111,8 +110,7 @@ class TestNotificationGateway:
         web = WebPayload(
             user_id="user123",
             message="Teste",
-            timestamp=timestamp,
-            is_read=False
+            timestamp=timestamp
         )
         content = NotificationContent(email=email, web=web)
         notification = Notification(

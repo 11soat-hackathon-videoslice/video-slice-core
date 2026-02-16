@@ -88,7 +88,7 @@ class TestSliceGateway:
             metadata=metadata,
             content=[NotificationContent(
                 email=EmailPayload(user_id="user123", template=EmailTemplateEnum.UPDATE_STATUS),
-                web=WebPayload(user_id="user123", message="Test message", timestamp=datetime.now(), is_read=False)
+                web=WebPayload(user_id="user123", message="Test message", timestamp=datetime.now())
             )]
         )
 
@@ -128,7 +128,7 @@ class TestSliceGateway:
             channels=[NotificationChannelsEnum.WEB],
             metadata=metadata,
             content=[NotificationContent(
-                web=WebPayload(user_id="user123", message="Web only message", timestamp=datetime.now(), is_read=False)
+                web=WebPayload(user_id="user123", message="Web only message", timestamp=datetime.now())
             )]
         )
 
