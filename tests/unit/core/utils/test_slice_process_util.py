@@ -216,20 +216,22 @@ class TestSliceProcessUtil:
         import numpy as np
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        new_width, new_height = get_frame_new_size(frame, 720)
+        new_width, new_height, original_min_size = get_frame_new_size(frame, 720)
 
         assert new_width == 1280
         assert new_height == 720
+        assert original_min_size == 1080
 
     def test_get_frame_new_size_no_resize_needed(self):
         """Testa quando frame já está no tamanho correto"""
         import numpy as np
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        new_width, new_height = get_frame_new_size(frame, 1080)
+        new_width, new_height, original_min_size = get_frame_new_size(frame, 1080)
 
         assert new_width == 1920
         assert new_height == 1080
+        assert original_min_size == 1080
 
     def test_frame_resize(self):
         """Testa redimensionamento de frame"""
@@ -441,7 +443,7 @@ class TestSliceProcessUtil:
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
         # Solicita redimensionar para altura mínima de 720
-        new_width, new_height = get_frame_new_size(frame, 720)
+        new_width, new_height, original_min_size = get_frame_new_size(frame, 720)
 
         # Verifica se a proporção foi mantida
         original_ratio = 1920 / 1080  # ~1.778
@@ -449,6 +451,7 @@ class TestSliceProcessUtil:
 
         assert abs(original_ratio - new_ratio) < 0.01
         assert new_height == 720
+        assert original_min_size == 1080
 
 
     def test_create_interval_list_with_single_interval(self, valid_event_dto):
@@ -611,22 +614,151 @@ class TestSliceProcessUtil:
         import numpy as np
 
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        new_width, new_height = get_frame_new_size(frame, 360)
+        new_width, new_height, original_min_size = get_frame_new_size(frame, 360)
 
         # Verifica que foi redimensionado para tamanho bem menor
         assert new_height == 360
         assert new_width < 1920
+        assert original_min_size == 1080
 
     def test_get_frame_new_size_with_large_target(self):
         """Testa redimensionamento com alvo grande"""
         import numpy as np
 
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        new_width, new_height = get_frame_new_size(frame, 2160)
+        new_width, new_height, original_min_size = get_frame_new_size(frame, 2160)
 
         # Verifica proporcionalidade
         original_ratio = 1920 / 1080
         new_ratio = new_width / new_height
 
         assert abs(original_ratio - new_ratio) < 0.01
+        assert original_min_size == 1080
 
+    @patch('core.utils.slice_process_util.os.path.getsize')
+    def test_set_metric_info_with_resize(self, mock_getsize):
+        """Testa criação de métricas com redimensionamento"""
+        from core.utils.slice_process_util import _set_metric_info
+
+        # Setup
+        mock_getsize.return_value = 104857600  # 100 MB em bytes
+        video_temp_path = "/tmp/test_video.mp4"
+        quality_output_level = "high"
+        resize_params = {
+            'resize': True,
+            'original_min_size': 1080,
+            'new_width': 1280,
+            'new_height': 720
+        }
+        interval_time = [0, 1000, 2000, 3000, 4000]
+        process_total_time = 15.5
+        avg_time_per_frame = 3.1
+        max_workers = 4
+
+        # Executa
+        result = _set_metric_info(video_temp_path, quality_output_level, resize_params,
+                                 interval_time, process_total_time, avg_time_per_frame, max_workers)
+
+        # Assertions
+        assert result['resize'] is True
+        assert result['original_min_size'] == 1080
+        assert result['resize_output'] == 720  # min(1280, 720)
+        assert result['quality_output_level'] == "high"
+        assert result['frames_processed'] == 5
+        assert result['workers'] == 4
+        assert result['video_size_mb'] == 100.0
+        assert result['process_total_time_seconds'] == 15.5
+        assert result['efficiency_per_frame_seconds'] == 3.1
+
+    @patch('core.utils.slice_process_util.os.path.getsize')
+    def test_set_metric_info_without_resize(self, mock_getsize):
+        """Testa criação de métricas sem redimensionamento"""
+        from core.utils.slice_process_util import _set_metric_info
+
+        # Setup
+        mock_getsize.return_value = 52428800  # 50 MB em bytes
+        video_temp_path = "/tmp/small_video.mp4"
+        quality_output_level = "ultra"
+        resize_params = {
+            'resize': False,
+            'original_min_size': 720,
+            'new_width': 1280,
+            'new_height': 720
+        }
+        interval_time = [0, 500, 1000]
+        process_total_time = 8.2
+        avg_time_per_frame = 2.73
+        max_workers = 2
+
+        # Executa
+        result = _set_metric_info(video_temp_path, quality_output_level, resize_params,
+                                 interval_time, process_total_time, avg_time_per_frame, max_workers)
+
+        # Assertions
+        assert result['resize'] is False
+        assert result['original_min_size'] == 720
+        assert result['resize_output'] == 720
+        assert result['quality_output_level'] == "ultra"
+        assert result['frames_processed'] == 3
+        assert result['workers'] == 2
+        assert result['video_size_mb'] == 50.0
+        assert result['process_total_time_seconds'] == 8.2
+        assert result['efficiency_per_frame_seconds'] == 2.73
+
+    @patch('core.utils.slice_process_util.os.path.getsize')
+    def test_set_metric_info_with_large_video(self, mock_getsize):
+        """Testa criação de métricas com vídeo grande"""
+        from core.utils.slice_process_util import _set_metric_info
+
+        # Setup
+        mock_getsize.return_value = 524288000  # 500 MB em bytes
+        video_temp_path = "/tmp/large_video.mp4"
+        quality_output_level = "medium"
+        resize_params = {
+            'resize': True,
+            'original_min_size': 1080,
+            'new_width': 854,
+            'new_height': 480
+        }
+        interval_time = list(range(0, 10000, 100))  # 100 frames
+        process_total_time = 120.5
+        avg_time_per_frame = 1.205
+        max_workers = 8
+
+        # Executa
+        result = _set_metric_info(video_temp_path, quality_output_level, resize_params,
+                                 interval_time, process_total_time, avg_time_per_frame, max_workers)
+
+        # Assertions
+        assert result['resize'] is True
+        assert result['original_min_size'] == 1080
+        assert result['resize_output'] == 480
+        assert result['quality_output_level'] == "medium"
+        assert result['frames_processed'] == 100
+        assert result['workers'] == 8
+        assert result['video_size_mb'] == 500.0
+        assert result['process_total_time_seconds'] == 120.5
+        assert result['efficiency_per_frame_seconds'] == 1.205
+
+    @patch('core.utils.slice_process_util.os.path.getsize')
+    def test_set_metric_info_rounds_video_size_correctly(self, mock_getsize):
+        """Testa que o tamanho do vídeo é arredondado corretamente"""
+        from core.utils.slice_process_util import _set_metric_info
+
+        # Setup - tamanho que não é múltiplo exato de MB
+        mock_getsize.return_value = 157286400  # ~150 MB
+        video_temp_path = "/tmp/video.mp4"
+        resize_params = {
+            'resize': False,
+            'original_min_size': 720,
+            'new_width': 1280,
+            'new_height': 720
+        }
+        interval_time = [0]
+
+        # Executa
+        result = _set_metric_info(video_temp_path, "high", resize_params,
+                                 interval_time, 10.0, 10.0, 4)
+
+        # Assertions - verifica arredondamento para 2 casas decimais
+        assert result['video_size_mb'] == 150.0

@@ -157,3 +157,80 @@ class TestSliceGateway:
         assert args[1] == schedule_time
         assert args[2] == schedule_config
 
+    def test_send_metric(self, gateway, mock_dataproxy):
+        """Testa envio de métricas"""
+        metric_info = {
+            'resize': True,
+            'original_min_size': 1080,
+            'resize_output': 720,
+            'quality_output_level': 'high',
+            'frames_processed': 10,
+            'workers': 4,
+            'video_size_mb': 100.0,
+            'process_total_time_seconds': 15.5,
+            'efficiency_per_frame_seconds': 1.55
+        }
+
+        gateway.send_metric(metric_info)
+
+        mock_dataproxy.send_metric.assert_called_once_with(metric_info)
+
+    def test_send_metric_with_different_quality_levels(self, gateway, mock_dataproxy):
+        """Testa envio de métricas com diferentes níveis de qualidade"""
+        quality_levels = ['ultra', 'high', 'medium', 'low']
+
+        for quality in quality_levels:
+            metric_info = {
+                'resize': True,
+                'original_min_size': 1080,
+                'resize_output': 720,
+                'quality_output_level': quality,
+                'frames_processed': 5,
+                'workers': 2,
+                'video_size_mb': 50.0,
+                'process_total_time_seconds': 10.0,
+                'efficiency_per_frame_seconds': 2.0
+            }
+
+            gateway.send_metric(metric_info)
+
+        assert mock_dataproxy.send_metric.call_count == len(quality_levels)
+
+    def test_send_metric_without_resize(self, gateway, mock_dataproxy):
+        """Testa envio de métricas sem redimensionamento"""
+        metric_info = {
+            'resize': False,
+            'original_min_size': 720,
+            'resize_output': 720,
+            'quality_output_level': 'original',
+            'frames_processed': 3,
+            'workers': 1,
+            'video_size_mb': 25.5,
+            'process_total_time_seconds': 5.2,
+            'efficiency_per_frame_seconds': 1.73
+        }
+
+        gateway.send_metric(metric_info)
+
+        mock_dataproxy.send_metric.assert_called_once_with(metric_info)
+
+    def test_send_metric_with_large_number_of_frames(self, gateway, mock_dataproxy):
+        """Testa envio de métricas com grande número de frames"""
+        metric_info = {
+            'resize': True,
+            'original_min_size': 1080,
+            'resize_output': 480,
+            'quality_output_level': 'medium',
+            'frames_processed': 500,
+            'workers': 8,
+            'video_size_mb': 750.0,
+            'process_total_time_seconds': 300.0,
+            'efficiency_per_frame_seconds': 0.6
+        }
+
+        gateway.send_metric(metric_info)
+
+        mock_dataproxy.send_metric.assert_called_once_with(metric_info)
+        args = mock_dataproxy.send_metric.call_args[0]
+        assert args[0]['frames_processed'] == 500
+        assert args[0]['workers'] == 8

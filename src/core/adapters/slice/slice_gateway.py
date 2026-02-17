@@ -10,6 +10,8 @@ from core.interfaces import SliceGatewayInferface
 
 class SliceGateway(SliceGatewayInferface):
 
+
+
     def __init__(self, dataproxy: SliceDataProxyInterface):
         self.dataproxy = dataproxy
 
@@ -32,9 +34,14 @@ class SliceGateway(SliceGatewayInferface):
         event_metadata = VdscMetadataDTO.from_dict(vdsc_metadata.to_dict())
         self.dataproxy.send_schedule_retry_event(event_metadata, schedule_time, schedule_config)
 
+    def send_metric(self, metric_info: str) -> None:
+        self.dataproxy.send_metric(metric_info)
+
     def send_notification(self, notification: Notification) -> None:
         notification_dto = NotificationDto.from_domain(notification)
         self.dataproxy.send_notification(notification_dto)
+
+
 
     def upload_finished_zip(self, output_directory: str, target_path: str) -> None:
         self.dataproxy.upload_finished_zip(output_directory, target_path)

@@ -98,6 +98,9 @@ class TestSliceDataProxyInterface:
             def save_file(self, file_path: str, data: bytes) -> None:
                 pass
 
+            def send_metric(self, metric_info: str) -> None:
+                pass
+
             def send_notification(self, notification) -> None:
                 pass
 
@@ -163,6 +166,9 @@ class TestSliceGatewayInterface:
             def save_file(self, file_path: str, data: bytes) -> None:
                 pass
 
+            def send_metric(self, metric_info: str) -> None:
+                pass
+
             def send_schedule_retry_event(self, vdsc_metadata, schedule_time, schedule_config) -> None:
                 pass
 
@@ -203,6 +209,9 @@ class TestSliceGatewayInterface:
                 return b""
 
             def save_file(self, file_path: str, data: bytes) -> None:
+                pass
+
+            def send_metric(self, metric_info: str) -> None:
                 pass
 
             def send_schedule_retry_event(self, vdsc_metadata, schedule_time, schedule_config) -> None:

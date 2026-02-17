@@ -24,6 +24,10 @@ class SliceDataProxyInterface(ABC):
         pass
 
     @abstractmethod
+    def send_metric(self, metric_info: str) -> None:
+        pass
+
+    @abstractmethod
     def send_notification(self, notification: NotificationDto) -> None:
         pass
 

@@ -1,4 +1,5 @@
 import logging
+import os
 import queue
 import tempfile
 import threading
@@ -112,7 +113,7 @@ def get_specific_interval_times(interval_times, multiplier: int) -> list[int]:
     return [int(time) * int(multiplier) for time in interval_times]
 
 
-def get_frame_new_size(frame, target_frame_min_size: int) -> tuple[ int, int]:
+def get_frame_new_size(frame, target_frame_min_size: int) -> tuple[int, int, int]:
     """Calcula a proporção de redimensionamento do frame e retorna a largura alvo mantendo a proporção"""
     #Busca tamanho original do frame
     original_height, original_width = frame.shape[:2]
@@ -123,10 +124,10 @@ def get_frame_new_size(frame, target_frame_min_size: int) -> tuple[ int, int]:
     #Valida se a largura é maior que altura
     if original_width > original_height:
         # Cenário landscape: a altura é a dimensão limitante, então calcula nova largura mantendo proporção.
-        return int(original_width * ratio),target_frame_min_size
+        return int(original_width * ratio), target_frame_min_size, original_min_size
     else:
         # Cenário portrait: a largura é a dimensão limitante, então calcula nova altura mantendo proporção.
-        return target_frame_min_size, int(original_height * ratio)
+        return target_frame_min_size, int(original_height * ratio), original_min_size
 
 
 def metadata_update_status(vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, log: LogEntry) -> VdscMetadata:
@@ -135,10 +136,10 @@ def metadata_update_status(vdsc_metadata: VdscMetadata, new_status: VdscStatusEn
     vdsc_metadata.logs.append(log)
     return vdsc_metadata
 
-def process_video(vdsc_metadata, video_data, video_output_directory, gateway, config: VdscConfigDTO):
+def process_video(vdsc_metadata: VdscMetadata, video_data, video_output_directory, gateway, config: VdscConfigDTO):
     """Processa os frames do vídeo e salva as imagens"""
     #Inicializando variáveis
-    resize_params = {'resize':None, 'new_width':None, 'new_height':None}
+    resize_params = {'resize':None, 'new_width':None, 'new_height':None, 'original_min_size': None}
     max_workers = int(config.vdsc.max_workers)
 
     video_id = vdsc_metadata.video_id
@@ -157,7 +158,7 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
 
     try:
         if getattr(config.vdsc.resize, output_quality, None) is not None:
-            _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
+            resize_params = _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
 
         save_queue = queue.Queue(maxsize=max_workers * 2) # Capacidade maior para não gerar gargalo de I/O
         save_file_thread = threading.Thread(target=_save_frames_from_queue, args=(gateway, save_queue), daemon=True)
@@ -189,13 +190,15 @@ def process_video(vdsc_metadata, video_data, video_output_directory, gateway, co
         save_queue.put(None)
         save_file_thread.join()
         total_duration  = time.perf_counter() - start_total
+        avg_time_per_frame = total_duration / len(interval_list)
+        metric_info = _set_metric_info(video_temp_path, vdsc_metadata.quality_output_level , resize_params, interval_list, total_duration, avg_time_per_frame, max_workers)
+        gateway.send_metric(metric_info)
         logger.debug(f"{vdsc_metadata.video_id} - Tempo total de execução: {total_duration:.2f} segundos")
-        logger.debug(f"{vdsc_metadata.video_id} - Eficiência Média por frame: {(total_duration * max_workers / len(interval_list)):.2f} segundos")
+        logger.debug(f"{vdsc_metadata.video_id} - Eficiência Média por frame: {avg_time_per_frame:.2f} segundos")
 
     except Exception as e:
         logger.error(f"Erro ao processar frames do vídeo ID {video_id}: {str(e)}", exc_info=e)
         raise
-
 
 
 def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, config: VdscConfigDTO):
@@ -227,8 +230,8 @@ def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:
     #Obtendo primeiro frame do video para obter dimensões atuais
     vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
     _, frame = vidcap_check.read()
-    new_width, new_height = get_frame_new_size(frame, min_size)
-    resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height}
+    new_width, new_height, original_min_size = get_frame_new_size(frame, min_size)
+    resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height, 'original_min_size': original_min_size}
     logger.info(f"Configurações de redimensionamento: {resize_params}")
     vidcap_check.release()
     return resize_params
@@ -255,3 +258,17 @@ def _save_frames_from_queue(gateway: SliceGatewayInferface, save_queue: queue.Qu
             logger.error(f"Erro ao salvar frame: {str(e)}", exc_info=True)
         finally:
             save_queue.task_done()
+
+def _set_metric_info(video_temp_path: str, quality_output_level: str, resize_params: dict, interval_time: list,
+                    process_total_time: float, avg_time_per_frame: float, max_workers: int) -> dict:
+    return {
+        'resize': resize_params['resize'] if resize_params['resize'] is not None else False,
+        'original_min_size': resize_params['original_min_size'],
+        'resize_output': min(resize_params['new_width'], resize_params['new_height']),
+        'quality_output_level': quality_output_level,
+        'frames_processed': len(interval_time),
+        'workers': max_workers,
+        'video_size_mb': round(os.path.getsize(video_temp_path) / (1024 * 1024), 2),
+        'process_total_time_seconds': process_total_time,
+        'efficiency_per_frame_seconds': avg_time_per_frame
+    }

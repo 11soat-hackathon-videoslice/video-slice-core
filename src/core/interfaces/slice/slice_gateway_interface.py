@@ -28,6 +28,10 @@ class SliceGatewayInferface(ABC):
         pass
 
     @abstractmethod
+    def send_metric(self, metric_info: str) -> None:
+        pass
+
+    @abstractmethod
     def send_notification(self, notification: Notification) -> None:
         pass
 
