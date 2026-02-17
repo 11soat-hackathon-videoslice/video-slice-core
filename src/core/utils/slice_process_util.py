@@ -231,7 +231,7 @@ def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:
     vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
     _, frame = vidcap_check.read()
     original_min_size = min(frame.shape[:2])
-    resize_params = {'resize': None, 'new_width': None, 'new_height': None, 'original_min_size': original_min_size}
+    resize_params = {'resize': None, 'new_width': 0, 'new_height': 0, 'original_min_size': original_min_size}
 
     if min_size:
         logger.info("Nenhum redimensionamento configurado.")
