@@ -157,8 +157,8 @@ def process_video(vdsc_metadata: VdscMetadata, video_data, video_output_director
     interval_list = create_interval_list(vdsc_metadata, time_unit_multiplier)
 
     try:
-        if getattr(config.vdsc.resize, output_quality, None) is not None:
-            resize_params = _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
+        resize_params = _check_resizer_needed(getattr(config.vdsc.resize, output_quality, None),video_temp_path)
+
 
         save_queue = queue.Queue(maxsize=max_workers * 2) # Capacidade maior para não gerar gargalo de I/O
         save_file_thread = threading.Thread(target=_save_frames_from_queue, args=(gateway, save_queue), daemon=True)
@@ -230,9 +230,15 @@ def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:
     #Obtendo primeiro frame do video para obter dimensões atuais
     vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
     _, frame = vidcap_check.read()
-    new_width, new_height, original_min_size = get_frame_new_size(frame, min_size)
-    resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height, 'original_min_size': original_min_size}
-    logger.info(f"Configurações de redimensionamento: {resize_params}")
+    original_min_size = min(frame.shape[:2])
+    resize_params = {'resize': None, 'new_width': None, 'new_height': None, 'original_min_size': original_min_size}
+
+    if min_size:
+        logger.info("Nenhum redimensionamento configurado.")
+        new_width, new_height, original_min_size = get_frame_new_size(frame, min_size)
+        resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height, 'original_min_size': original_min_size}
+        logger.info(f"Configurações de redimensionamento: {resize_params}")
+
     vidcap_check.release()
     return resize_params
 
