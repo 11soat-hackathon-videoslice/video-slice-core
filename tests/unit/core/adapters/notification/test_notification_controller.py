@@ -51,7 +51,7 @@ class TestNotificationController:
         controller = NotificationController(mock_datasource)
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -114,7 +114,7 @@ class TestNotificationController:
         controller = NotificationController(mock_datasource)
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -134,7 +134,7 @@ class TestNotificationController:
         controller = NotificationController(mock_datasource)
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -154,7 +154,7 @@ class TestNotificationController:
         controller = NotificationController(mock_datasource)
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(

@@ -46,7 +46,7 @@ class TestSendNotificationEmailUseCase:
         use_case = SendNotificationEmailUseCase()
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -98,7 +98,7 @@ class TestSendNotificationEmailUseCase:
         use_case = SendNotificationEmailUseCase()
         email = EmailPayloadDto(
             user_id="user456",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -147,7 +147,7 @@ class TestSendNotificationEmailUseCase:
         mock_gateway.send.side_effect = Exception("Erro no gateway")
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -163,7 +163,7 @@ class TestSendNotificationEmailUseCase:
         use_case = SendNotificationEmailUseCase()
         email1 = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         email2 = EmailPayloadDto(
             user_id="user456",

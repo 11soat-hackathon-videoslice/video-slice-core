@@ -1,7 +1,9 @@
-from enum import Enum, auto
+from enum import Enum
 
 
 class EmailTemplateEnum(str,Enum):
-    UPDATE_STATUS = auto()
-    FAILED = auto()
-    FINISHED = auto()
+    FAILED = 'FAILED'
+    FINISHED = 'FINISHED'
+    PROCESSING = 'PROCESSING'
+    RETRYING = 'RETRYING'
+

@@ -8,9 +8,9 @@ class TestEmailTemplateEnum:
     """Testes para EmailTemplateEnum"""
 
     def test_enum_has_update_status_value(self):
-        """Testa que enum possui valor UPDATE_STATUS"""
-        assert hasattr(EmailTemplateEnum, 'UPDATE_STATUS')
-        assert EmailTemplateEnum.UPDATE_STATUS is not None
+        """Testa que enum possui valor PROCESSING"""
+        assert hasattr(EmailTemplateEnum, 'PROCESSING')
+        assert EmailTemplateEnum.PROCESSING is not None
 
     def test_enum_has_failed_value(self):
         """Testa que enum possui valor FAILED"""
@@ -24,27 +24,27 @@ class TestEmailTemplateEnum:
 
     def test_enum_values_are_different(self):
         """Testa que valores do enum são diferentes"""
-        assert EmailTemplateEnum.UPDATE_STATUS != EmailTemplateEnum.FAILED
-        assert EmailTemplateEnum.UPDATE_STATUS != EmailTemplateEnum.FINISHED
+        assert EmailTemplateEnum.PROCESSING != EmailTemplateEnum.FAILED
+        assert EmailTemplateEnum.PROCESSING != EmailTemplateEnum.FINISHED
         assert EmailTemplateEnum.FAILED != EmailTemplateEnum.FINISHED
 
     def test_enum_name_property(self):
         """Testa propriedade name dos valores do enum"""
-        assert EmailTemplateEnum.UPDATE_STATUS.name == 'UPDATE_STATUS'
+        assert EmailTemplateEnum.PROCESSING.name == 'PROCESSING'
         assert EmailTemplateEnum.FAILED.name == 'FAILED'
         assert EmailTemplateEnum.FINISHED.name == 'FINISHED'
 
     def test_enum_can_be_compared(self):
         """Testa que valores do enum podem ser comparados"""
-        template1 = EmailTemplateEnum.UPDATE_STATUS
-        template2 = EmailTemplateEnum.UPDATE_STATUS
+        template1 = EmailTemplateEnum.PROCESSING
+        template2 = EmailTemplateEnum.PROCESSING
         template3 = EmailTemplateEnum.FAILED
         assert template1 == template2
         assert template1 != template3
 
     def test_enum_can_be_used_in_list(self):
         """Testa que enum pode ser usado em lista"""
-        templates = [EmailTemplateEnum.UPDATE_STATUS, EmailTemplateEnum.FAILED]
-        assert EmailTemplateEnum.UPDATE_STATUS in templates
+        templates = [EmailTemplateEnum.PROCESSING, EmailTemplateEnum.FAILED]
+        assert EmailTemplateEnum.PROCESSING in templates
         assert EmailTemplateEnum.FINISHED not in templates
 

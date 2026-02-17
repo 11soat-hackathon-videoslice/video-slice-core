@@ -219,7 +219,7 @@ def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception,
     message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retries} agendada para {_print_schedule_brasil(schedule_timestamp)}."
     vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
     gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules.to_dict())
-    gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.UPDATE_STATUS))
+    gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.PROCESSING))
     return vdsc_metadata, message
 
 def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:

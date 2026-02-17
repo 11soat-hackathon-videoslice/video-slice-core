@@ -53,7 +53,7 @@ class TestNotificationGateway:
         gateway = NotificationGateway(mock_datasource)
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         notification = Notification(
@@ -104,7 +104,7 @@ class TestNotificationGateway:
         gateway = NotificationGateway(mock_datasource)
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         timestamp = datetime(2026, 2, 8, 12, 0, 0, tzinfo=UTC)
         web = WebPayload(
@@ -127,7 +127,7 @@ class TestNotificationGateway:
         mock_datasource.send.side_effect = Exception("Erro no datasource")
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         notification = Notification(
@@ -143,7 +143,7 @@ class TestNotificationGateway:
         gateway = NotificationGateway(mock_datasource)
         email1 = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         email2 = EmailPayload(
             user_id="user456",

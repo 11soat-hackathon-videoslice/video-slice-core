@@ -16,10 +16,10 @@ class TestEmailPayloadDto:
     def test_valid_email_payload_created_successfully(self):
         email_payload = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         assert email_payload.user_id == "user123"
-        assert email_payload.template == EmailTemplateEnum.UPDATE_STATUS
+        assert email_payload.template == EmailTemplateEnum.PROCESSING
 
     def test_email_payload_converted_to_dict_correctly(self):
         email_payload = EmailPayloadDto(
@@ -42,13 +42,13 @@ class TestEmailPayloadDto:
     def test_email_payload_converted_to_json_successfully(self):
         email_payload = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         result = email_payload.to_json()
         assert isinstance(result, str)
         parsed = json.loads(result)
         assert parsed["user_id"] == "user123"
-        assert parsed["template"] == "UPDATE_STATUS"
+        assert parsed["template"] == "PROCESSING"
 
 
 @pytest.mark.unit
@@ -111,7 +111,7 @@ class TestNotificationContentDto:
     def test_notification_content_with_email_only_created_successfully(self):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         assert content.email is not None
@@ -148,7 +148,7 @@ class TestNotificationContentDto:
     def test_notification_content_with_email_converted_to_dict_correctly(self):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         result = content.to_dict()
@@ -178,7 +178,7 @@ class TestNotificationContentDto:
     def test_notification_content_with_email_converted_to_json_successfully(self):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         result = content.to_json()
@@ -238,7 +238,7 @@ class TestNotificationDto:
     def test_notification_with_email_channel_created_successfully(self, valid_metadata_dto):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification = NotificationDto(
@@ -309,7 +309,7 @@ class TestNotificationDto:
     def test_notification_without_required_web_payload_raises_error(self, valid_metadata_dto):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         with pytest.raises(ValueError, match="Canal WEB requer WebPayload"):
@@ -324,7 +324,7 @@ class TestNotificationDto:
     def test_notification_converted_to_dict_correctly(self, valid_metadata_dto):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification_id = str(uuid4())
@@ -343,7 +343,7 @@ class TestNotificationDto:
     def test_notification_with_multiple_contents_converted_correctly(self, valid_metadata_dto):
         email1 = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         email2 = EmailPayloadDto(
             user_id="user456",
@@ -363,7 +363,7 @@ class TestNotificationDto:
     def test_notification_converted_to_json_successfully(self, valid_metadata_dto):
         email = EmailPayloadDto(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContentDto(email=email)
         notification_id = str(uuid4())

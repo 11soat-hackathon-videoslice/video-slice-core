@@ -331,11 +331,11 @@ class TestSliceProcessUtil:
         """Testa criação de payload de email"""
         metadata = VdscMetadata(dto=valid_event_dto)
 
-        result = create_email_notification(metadata, EmailTemplateEnum.UPDATE_STATUS)
+        result = create_email_notification(metadata, EmailTemplateEnum.PROCESSING)
 
         assert isinstance(result, EmailPayload)
         assert result.user_id == "user123"
-        assert result.template == EmailTemplateEnum.UPDATE_STATUS
+        assert result.template == EmailTemplateEnum.PROCESSING
 
     def test_create_email_notification_finished(self, valid_event_dto):
         """Testa criação de payload de email com template FINISHED"""

@@ -16,10 +16,10 @@ class TestEmailPayload:
     def test_valid_email_payload_created_successfully(self):
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         assert email.user_id == "user123"
-        assert email.template == EmailTemplateEnum.UPDATE_STATUS
+        assert email.template == EmailTemplateEnum.PROCESSING
 
     def test_email_payload_with_failed_template_created_successfully(self):
         email = EmailPayload(
@@ -69,7 +69,7 @@ class TestNotificationContent:
     def test_notification_content_with_email_only_created_successfully(self):
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         assert content.email is not None
@@ -140,7 +140,7 @@ class TestNotification:
     def test_notification_with_email_channel_created_successfully(self, valid_metadata):
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         notification = Notification(
@@ -212,7 +212,7 @@ class TestNotification:
     def test_notification_without_required_web_payload_raises_error(self, valid_metadata):
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         with pytest.raises(ValueError, match="Canal WEB requer WebPayload"):
@@ -226,7 +226,7 @@ class TestNotification:
     def test_notification_with_multiple_contents_created_successfully(self, valid_metadata):
         email1 = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         email2 = EmailPayload(
             user_id="user456",
@@ -247,7 +247,7 @@ class TestNotification:
     def test_notification_channels_validation_called_on_creation(self, valid_metadata):
         email = EmailPayload(
             user_id="user123",
-            template=EmailTemplateEnum.UPDATE_STATUS
+            template=EmailTemplateEnum.PROCESSING
         )
         content = NotificationContent(email=email)
         notification = Notification(
