@@ -231,13 +231,15 @@ def _check_resizer_needed(min_size: int, video_temp_path: str) -> dict:
     vidcap_check.set(cv2.CAP_PROP_POS_MSEC, 1)
     _, frame = vidcap_check.read()
     original_min_size = min(frame.shape[:2])
-    resize_params = {'resize': None, 'new_width': 0, 'new_height': 0, 'original_min_size': original_min_size}
 
     if min_size:
-        logger.info("Nenhum redimensionamento configurado.")
+        logger.info("Redimensionamento configurado.")
         new_width, new_height, original_min_size = get_frame_new_size(frame, min_size)
         resize_params = {'resize':True, 'new_width':new_width, 'new_height':new_height, 'original_min_size': original_min_size}
         logger.info(f"Configurações de redimensionamento: {resize_params}")
+    else:
+        logger.info("Nenhum redimensionamento configurado.")
+        resize_params = {'resize': None, 'new_width': 0, 'new_height': 0, 'original_min_size': original_min_size}
 
     vidcap_check.release()
     return resize_params
@@ -272,7 +274,7 @@ def _set_metric_info(video_temp_path: str, quality_output_level: str, resize_par
     return {
         'resize': resize_params['resize'] if resize_params['resize'] is not None else False,
         'original_min_size': resize_params['original_min_size'],
-        'resize_output': min(resize_params['new_width'], resize_params['new_height']) if resize_params['new_width'] is not None and resize_params['new_height'] is not None else None,
+        'resize_output': min(resize_params['new_width'], resize_params['new_height']),
         'quality_output_level': quality_output_level,
         'frames_processed': len(interval_time),
         'workers': max_workers,

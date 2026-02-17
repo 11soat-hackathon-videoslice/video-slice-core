@@ -570,6 +570,35 @@ class TestSliceProcessUtil:
             import os
             os.remove(temp_path)
 
+    def test_check_resizer_needed_no_resize(self):
+        """Testa quando não há redimensionamento configurado (min_size é None ou 0)"""
+        from core.utils.slice_process_util import _check_resizer_needed
+        import numpy as np
+        import tempfile
+
+        test_data = b"fake"
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
+            temp_path = f.name
+            f.write(test_data)
+
+        try:
+            with patch('core.utils.slice_process_util.cv2.VideoCapture') as mock_cap:
+                mock_instance = MagicMock()
+                mock_cap.return_value = mock_instance
+                # Frame 1920x1080
+                mock_instance.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
+
+                result = _check_resizer_needed(None, temp_path)
+
+                # Verifica que não há redimensionamento
+                assert result["resize"] is None
+                assert result["new_width"] == 0
+                assert result["new_height"] == 0
+                assert result["original_min_size"] == 1080  # menor dimensão do frame
+        finally:
+            import os
+            os.remove(temp_path)
+
     def test_print_schedule_brasil_boundary_times(self):
         """Testa conversão em horas limite"""
         from core.utils.slice_process_util import _print_schedule_brasil
@@ -765,7 +794,7 @@ class TestSliceProcessUtil:
 
     @patch('core.utils.slice_process_util.os.path.getsize')
     def test_set_metric_info_with_none_resize_params(self, mock_getsize):
-        """Testa criação de métricas quando resize_params contém valores None"""
+        """Testa criação de métricas quando resize_params contém valores 0 (sem redimensionamento)"""
         from core.utils.slice_process_util import _set_metric_info
 
         # Setup - simula cenário onde resize não foi configurado
@@ -774,9 +803,9 @@ class TestSliceProcessUtil:
         quality_output_level = "medium"
         resize_params = {
             'resize': None,
-            'original_min_size': None,
-            'new_width': None,
-            'new_height': None
+            'original_min_size': 1080,
+            'new_width': 0,
+            'new_height': 0
         }
         interval_time = [0, 1000, 2000]
         process_total_time = 5.5
@@ -789,8 +818,8 @@ class TestSliceProcessUtil:
 
         # Assertions
         assert result['resize'] is False  # None deve ser convertido para False
-        assert result['original_min_size'] is None
-        assert result['resize_output'] is None  # Deve ser None quando new_width e new_height são None
+        assert result['original_min_size'] == 1080
+        assert result['resize_output'] == 0  # min(0, 0) retorna 0
         assert result['quality_output_level'] == "medium"
         assert result['frames_processed'] == 3
         assert result['workers'] == 3
