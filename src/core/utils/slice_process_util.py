@@ -261,10 +261,12 @@ def _save_frames_from_queue(gateway: SliceGatewayInferface, save_queue: queue.Qu
 
 def _set_metric_info(video_temp_path: str, quality_output_level: str, resize_params: dict, interval_time: list,
                     process_total_time: float, avg_time_per_frame: float, max_workers: int) -> dict:
+
+
     return {
         'resize': resize_params['resize'] if resize_params['resize'] is not None else False,
         'original_min_size': resize_params['original_min_size'],
-        'resize_output': min(resize_params['new_width'], resize_params['new_height']),
+        'resize_output': min(resize_params['new_width'], resize_params['new_height']) if resize_params['new_width'] is not None and resize_params['new_height'] is not None else None,
         'quality_output_level': quality_output_level,
         'frames_processed': len(interval_time),
         'workers': max_workers,

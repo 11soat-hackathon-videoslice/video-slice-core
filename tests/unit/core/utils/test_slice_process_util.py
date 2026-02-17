@@ -762,3 +762,39 @@ class TestSliceProcessUtil:
 
         # Assertions - verifica arredondamento para 2 casas decimais
         assert result['video_size_mb'] == 150.0
+
+    @patch('core.utils.slice_process_util.os.path.getsize')
+    def test_set_metric_info_with_none_resize_params(self, mock_getsize):
+        """Testa criação de métricas quando resize_params contém valores None"""
+        from core.utils.slice_process_util import _set_metric_info
+
+        # Setup - simula cenário onde resize não foi configurado
+        mock_getsize.return_value = 52428800  # 50 MB em bytes
+        video_temp_path = "/tmp/video.mp4"
+        quality_output_level = "medium"
+        resize_params = {
+            'resize': None,
+            'original_min_size': None,
+            'new_width': None,
+            'new_height': None
+        }
+        interval_time = [0, 1000, 2000]
+        process_total_time = 5.5
+        avg_time_per_frame = 1.83
+        max_workers = 3
+
+        # Executa - não deve lançar TypeError
+        result = _set_metric_info(video_temp_path, quality_output_level, resize_params,
+                                 interval_time, process_total_time, avg_time_per_frame, max_workers)
+
+        # Assertions
+        assert result['resize'] is False  # None deve ser convertido para False
+        assert result['original_min_size'] is None
+        assert result['resize_output'] is None  # Deve ser None quando new_width e new_height são None
+        assert result['quality_output_level'] == "medium"
+        assert result['frames_processed'] == 3
+        assert result['workers'] == 3
+        assert result['video_size_mb'] == 50.0
+        assert result['process_total_time_seconds'] == 5.5
+        assert result['efficiency_per_frame_seconds'] == 1.83
+
