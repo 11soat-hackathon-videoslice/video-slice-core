@@ -58,7 +58,7 @@ from .utils import (create_email_notification, create_interval_list,
                     process_video_frame, schedule_event_util,
                     set_exception_status, set_exception_status_failed,
                     set_exception_status_retrying, slice_process_util,
-                    slice_video_process_frame_util, )
+                    slice_video_process_frame_util,)
 
 __all__ = ['EmailPayload', 'EmailPayloadDto', 'EmailTemplateEnum',
            'GeneratePresignedURLUseCase', 'LogEntry', 'LogEntryDTO',

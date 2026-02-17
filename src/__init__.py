@@ -45,7 +45,7 @@ from .core import (EmailPayload, EmailPayloadDto, EmailTemplateEnum,
                    url_presenter, utils, vdsc_config_dto,
                    vdsc_exception_handler_interface, vdsc_exceptions,
                    vdsc_metadata, vdsc_metadata_dto, vdsc_status_enum,
-                   video_resize_enum, )
+                   video_resize_enum,)
 
 __all__ = ['EmailPayload', 'EmailPayloadDto', 'EmailTemplateEnum',
            'GeneratePresignedURLUseCase', 'LogEntry', 'LogEntryDTO',

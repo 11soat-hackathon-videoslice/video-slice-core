@@ -13,7 +13,7 @@ from .slice_process_util import (create_email_notification,
                                  metadata_update_status, process_video,
                                  set_exception_status,
                                  set_exception_status_failed,
-                                 set_exception_status_retrying, )
+                                 set_exception_status_retrying,)
 from .slice_video_process_frame_util import (encode_frame_to_jpg, frame_resize,
                                              get_frame_size, logger,
                                              process_video_frame,)
