@@ -1,0 +1,101 @@
+"""Testes unitários para VdscController"""
+import pytest
+from unittest.mock import Mock, MagicMock, patch
+from core.adapters.slice.slice_controller import SliceController
+from core.dtos.vdsc_metadata_dto import VdscMetadataDTO
+from core.dtos.vdsc_config_dto import VdscConfigDTO
+
+
+@pytest.mark.unit
+class TestSliceController:
+    """Testes para o controlador"""
+
+    @pytest.fixture
+    def mock_dataproxy(self):
+        """Mock para DataProxy"""
+        return Mock()
+
+    @pytest.fixture
+    def mock_handler(self):
+        """Mock para ExceptionHandler"""
+        return Mock()
+
+    @pytest.fixture
+    def controller(self, mock_dataproxy, mock_handler):
+        """Fixture para criar instância do controlador"""
+        return SliceController(dataproxy=mock_dataproxy, handler=mock_handler)
+
+    @pytest.fixture
+    def valid_event_dto(self):
+        """Fixture com DTO válido"""
+        return VdscMetadataDTO(
+            video_id="video123",
+            file_name="test_video.mp4",
+            file_extension="mp4",
+            status="uploaded",
+            created="2026-01-13T00:00:00Z",
+            user_id="user123",
+            total_time=3600,
+            unit_time="s",
+            start_time=0,
+            end_time=60,
+            interval_time=["00:00:00", "00:01:00"],
+            max_retries=3,
+            retries=0,
+            resize="high",
+            quality_output_level=65,
+            logs=[]
+        )
+
+    @pytest.fixture
+    def mock_config(self):
+        """Fixture com configuração mock"""
+        config = MagicMock(spec=VdscConfigDTO)
+        config.vdsc = {
+            'resize': {
+                'high': 720
+            }
+        }
+        config.s3_bucket = {
+            'dir_uploads': 'uploads/',
+            'dir_processing': 'processing/',
+            'dir_finished': 'finished/'
+        }
+        return config
+
+    def test_init(self, controller, mock_dataproxy, mock_handler):
+        """Testa inicialização do controlador"""
+        assert controller.data_proxy == mock_dataproxy
+        assert controller.handler == mock_handler
+
+    @patch('core.adapters.slice.slice_controller.SliceGateway')
+    @patch('core.adapters.slice.slice_controller.SliceProcessUseCase')
+    def test_video_slice_processing(self, mock_use_case_class, mock_gateway_class,
+                                    controller, valid_event_dto, mock_config):
+        """Testa processamento de slice de vídeo"""
+        mock_gateway = Mock()
+        mock_use_case = Mock()
+        mock_gateway_class.return_value = mock_gateway
+        mock_use_case_class.return_value = mock_use_case
+
+        controller.video_slice_processing(valid_event_dto, mock_config)
+
+        mock_gateway_class.assert_called_once_with(controller.data_proxy)
+        mock_use_case.execute.assert_called_once_with(
+            mock_gateway,
+            valid_event_dto,
+            mock_config,
+            controller.handler
+        )
+
+    @patch('core.adapters.slice.slice_controller.SliceGateway')
+    @patch('core.adapters.slice.slice_controller.SliceProcessUseCase')
+    def test_video_slice_processing_with_error(self, mock_use_case_class, mock_gateway_class,
+                                               controller, valid_event_dto, mock_config):
+        """Testa processamento com erro"""
+        mock_use_case = Mock()
+        mock_use_case_class.return_value = mock_use_case
+        mock_use_case.execute.side_effect = Exception("Erro de processamento")
+
+        with pytest.raises(Exception, match="Erro de processamento"):
+            controller.video_slice_processing(valid_event_dto, mock_config)
