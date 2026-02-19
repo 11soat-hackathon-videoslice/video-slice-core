@@ -1,190 +1,100 @@
-# video-slice-core
+# Video Slice Core
 
-Biblioteca core da aplicação Video Slice para processamento de vídeos.
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=11soat-hackton-videoslice_video-slice-core&metric=alert_status&token=5972a76179f55b35b86a31bd473e55cfbd14c222)](https://sonarcloud.io/summary/new_code?id=11soat-hackton-videoslice_video-slice-core)
+[![Test, Build e Publish video-slice core](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/workflows/build_test_deploy_lambda.yaml/badge.svg)](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/workflows/build_test_deploy_lambda.yaml)
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/11soat-hackathon-videoslice/video-slice-core/releases/tag/v1.0.0)
 
-## 📋 Descrição
+Biblioteca core para processamento de vídeos com arquitetura limpa e segregação de domínios.
 
-Esta biblioteca fornece os componentes principais (core) para processamento de vídeos, incluindo:
-- Modelos de domínio (Domain Models)
-- DTOs (Data Transfer Objects)
-- Casos de uso (Use Cases)
-- Interfaces e contratos
-- Enums e exceções customizadas
-- Utilitários
+## 📋 Visão Geral
 
-## 🚀 Instalação
+A **video-slice-core** é uma biblioteca Python que implementa a lógica de negócio central para processamento de vídeos, seguindo os princípios da **Clean Architecture**. A biblioteca é organizada em domínios segregados e camadas bem definidas, facilitando a manutenção, testabilidade e extensibilidade do código.
 
-### Como dependência local
+### Domínios
 
-```bash
-pip install -e /path/to/video-slice-core
+#### Domínio Principal
+
+**Slice**: Responsável pelo processamento de vídeos, incluindo:
+- Extração de frames de vídeos
+- Redimensionamento de frames
+- Aplicação de filtros e transformações
+- Geração de slices de vídeo
+- Gerenciamento de metadados de processamento
+
+#### Domínios Secundários
+
+**URL**: Responsável pela geração de URLs pré-assinadas para:
+- Download de vídeos originais
+- Upload de vídeos processados
+- Acesso temporário a recursos S3
+
+**Notifications**: Responsável pelo envio de notificações para:
+- Canal **E-mail**: notificações por correio eletrônico
+- Canal **Web**: notificações via AppSync/GraphQL
+
+## 🏗️ Arquitetura
+
+A biblioteca segue os princípios da **Clean Architecture**, com segregação clara de responsabilidades em camadas:
+
+
+### Camadas da Arquitetura
+
+#### **Adaptadores | Adapters**
+- **Controllers**: Orquestram o fluxo de dados entre a camada externa e os use cases
+- **Gateways**: Implementam a comunicação com serviços externos (AWS, APIs, etc.)
+- **Presenters**: Formatam os dados de saída para a camada externa
+
+#### **Casos de Uso | Applications**
+- Contêm a lógica de aplicação e orquestração de regras de negócio
+- Independentes de frameworks e bibliotecas externas
+- Coordenam o fluxo entre domínios
+
+#### **Domínio | Domain**
+- Entidades de negócio puras
+- Contêm as regras de negócio fundamentais
+- Independentes de qualquer framework ou tecnologia
+
+#### **DTOs | Data Transfer Objects**
+- Objetos para transferência de dados entre camadas
+- Validação e serialização de dados
+
+#### **Interfaces**
+- Contratos que definem comportamentos esperados
+- Inversão de dependência (Dependency Inversion Principle)
+- Facilitam testes e substituição de implementações
+
+## 🚀 Como Utilizar
+
+### Instalação
+
+Adicione a biblioteca ao seu `requirements.txt`:
+
+```text
+vdsc-core @ git+https://github.com/11soat-hackathon-videoslice/video-slice-core.git@v1.0.0
 ```
 
-### Como dependência do Git
+**Nota**: É necessário configurar um `GITHUB_TOKEN` (Personal Access Token) com permissões de leitura para acessar o repositório privado.
 
-```bash
-pip install git+https://github.com/11soat-hackton-videoslice/video-slice-core.git
-```
+## 📦 Projetos de Implementação
 
-### Para desenvolvimento
+Esta biblioteca é utilizada pelos seguintes projetos:
 
-```bash
-git clone https://github.com/11soat-hackton-videoslice/video-slice-core.git
-cd video-slice-core
-pip install -e .
-```
-
-## 📦 Dependências
-
-- `requests>=2.25.0`
-- `opencv-python-headless==4.10.0.84`
-- `Pillow==10.4.0`
-- `numpy==1.26.4`
-
-## 🔧 Uso
-
-### Importando componentes
-
-```python
-# Adapters
-from vdsc_core import VdscController, VdscProcessUseCase
-
-# Domain
-from vdsc_core import LogEntry, VdscMetadata
-
-# DTOs
-from vdsc_core import EventDTO, VdscMetadataDTO
-
-# Enums
-from vdsc_core import VdscStatusEnum, VideoQuality
-
-# Exceptions
-from vdsc_core import VdscException
-
-# Interfaces
-from vdsc_core import (
-    VdscControllerInterface,
-    VdscDataProxyInterface,
-    VdscGatewayInferface
-)
-```
-
-### Exemplo de uso
-
-```python
-from vdsc_core import VdscMetadataDTO, VdscMetadata, VdscStatusEnum, LogEntry
-
-# Criar um DTO
-dto = VdscMetadataDTO(
-    video_id="video123",
-    file_name="video.mp4",
-    extension_file="mp4",
-    status="UPLOADED",
-    created="2026-01-13T00:00:00Z",
-    user_id="user123",
-    total_time=3600,
-    unit_time="s",
-    start_time=0,
-    end_time=60,
-    time_interval=[10],
-    max_retry=3,
-    retries=0,
-    quality="high",
-    logs=[]
-)
-
-# Converter DTO para entidade de domínio
-metadata = VdscMetadata(dto=dto)
-
-# Adicionar log
-metadata.add_log(LogEntry("Processamento iniciado"))
-
-# Alterar status
-metadata.mark_as_processing()
-
-# Validar
-metadata.validate()
-
-# Converter de volta para dict
-data = metadata.to_dict()
-```
+- **ms-video-slice**: Microserviço Lambda para processamento de vídeos
+- **ms-video-url-generator**: Microserviço Lambda para geração de URLs pré-assinadas
+- **ms-notification-email**: Microserviço Lambda para envio de notificações por e-mail
+- **ms-notification-web**: Microserviço Lambda para envio de notificações web
 
 ## 🧪 Testes
 
-### Executar testes unitários
+A biblioteca possui cobertura de testes de no mínimo 80%. Para executar os testes:
 
 ```bash
-pytest tests/unit/ -v
+pytest tests/unit/ --cov=src/core --cov-report=xml --cov-report=html --cov-report=term --junitxml=test-results.xml -v --cov-fail-under=80
 ```
 
-### Executar testes com cobertura
+## 📚 Documentação Adicional
 
-```bash
-pytest tests/unit/ --cov=src --cov-report=term-missing --cov-report=html
-```
+- [Release v1.0.0](https://github.com/11soat-hackathon-videoslice/video-slice-core/releases/tag/v1.0.0)
+- [Pipeline de CI/CD](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/runs/22137804661)
+- [Análise de Qualidade - SonarCloud](https://sonarcloud.io/summary/new_code?id=11soat-hackton-videoslice_video-slice-core)
 
-### Cobertura atual
-
-**91%** de cobertura de código ✅
-
-## 📁 Estrutura do Projeto
-
-```
-video-slice-core/
-├── src/
-│   └── core/
-│       ├── adapters/       # Adaptadores e controladores
-│       ├── applications/   # Casos de uso
-│       ├── domain/         # Modelos de domínio
-│       ├── dtos/           # Data Transfer Objects
-│       ├── enums/          # Enumerações
-│       ├── exceptions/     # Exceções customizadas
-│       ├── interfaces/     # Contratos e interfaces
-│       └── utils/          # Utilitários
-├── tests/
-│   └── unit/              # Testes unitários
-├── pyproject.toml         # Configuração do projeto
-└── README.md              # Este arquivo
-```
-
-## 🔑 Principais Componentes
-
-### Domain Models
-- `VdscMetadata`: Metadados do vídeo com lógica de negócio
-- `LogEntry`: Entradas de log com timestamp ISO8601
-
-### DTOs
-- `VdscMetadataDTO`: DTO para transferência de metadados
-- `EventDTO`: DTO para eventos
-
-### Use Cases
-- `VdscProcessUseCase`: Processamento de vídeo com captura de frames
-
-### Enums
-- `VdscStatusEnum`: Status do processamento (UPLOADED, PROCESSING, FINISHED, FAILED, RETRYING)
-- `VideoQuality`: Qualidades de vídeo (HIGH, MEDIUM, LOW)
-
-### Exceptions
-- `VdscException`: Exceção customizada com metadados
-
-## 📝 Licença
-
-MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-## 👥 Autor
-
-**Tito Parizotto** - [titoparizotto@gmail.com](mailto:titoparizotto@gmail.com)
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📊 Status
-
-[![Tests](https://img.shields.io/badge/tests-174%20passing-brightgreen)]()
-[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen)]()
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)]()
