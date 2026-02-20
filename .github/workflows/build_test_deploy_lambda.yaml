@@ -3,6 +3,8 @@ name: Test, Build e Publish video-slice core
 permissions:
   id-token: write
   contents: read
+  issues: write
+  pull-requests: write
 
 on:
   workflow_dispatch:
