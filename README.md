@@ -1,5 +1,16 @@
 # Video Slice Core
 
+## Índice
+
+- [Visão Geral](#-visão-geral)
+- [Domínios](#domínios)
+- [Arquitetura](#-arquitetura)
+- [Camadas da Arquitetura](#camadas-da-arquitetura)
+- [Como Utilizar](#-como-utilizar)
+- [Projetos de Implementação](#-projetos-de-implementação)
+- [Testes](#-testes)
+- [Documentação Adicional](#-documentação-adicional)
+
 [![Test, Build e Publish video-slice core](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/workflows/build_test_deploy_lambda.yaml/badge.svg)](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/workflows/build_test_deploy_lambda.yaml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=11soat-hackton-videoslice_video-slice-core&metric=alert_status&token=5972a76179f55b35b86a31bd473e55cfbd14c222)](https://sonarcloud.io/summary/new_code?id=11soat-hackton-videoslice_video-slice-core)
 [![Release](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/11soat-hackathon-videoslice/video-slice-core/releases/tag/v1.0.0)
@@ -97,4 +108,3 @@ pytest tests/unit/ --cov=src/core --cov-report=xml --cov-report=html --cov-repor
 - [Release v1.0.0](https://github.com/11soat-hackathon-videoslice/video-slice-core/releases/tag/v1.0.0)
 - [Pipeline de CI/CD](https://github.com/11soat-hackathon-videoslice/video-slice-core/actions/runs/22137804661)
 - [Análise de Qualidade - SonarCloud](https://sonarcloud.io/summary/new_code?id=11soat-hackton-videoslice_video-slice-core)
-

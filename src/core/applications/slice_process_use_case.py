@@ -32,7 +32,7 @@ class SliceProcessUseCase:
         retries = vdsc_metadata.retries
         max_retries = vdsc_metadata.max_retries
         file_extension = vdsc_metadata.file_extension
-        file_name = vdsc_metadata.file_name
+        zip_name = f"{vdsc_metadata.file_name}_{vdsc_metadata.video_id}"
         video_name = f"{vdsc_metadata.file_name}.{file_extension}"
         log_message = None
         email_template_enum = None
@@ -61,7 +61,7 @@ class SliceProcessUseCase:
             logger.info(f"Finalizada captura de imagens para o vídeo ID: {event.video_id})")
 
             #Compactando arquivos para zip e fazendo upload para diretório final
-            finished_zip_path = get_path_file(prefix_path=config.vdsc.dir_finished, file_name=file_name, file_extension='zip')
+            finished_zip_path = get_path_file(prefix_path=config.vdsc.dir_finished, file_name=zip_name, file_extension='zip')
             gateway.upload_finished_zip(output_directory=video_output_directory, target_path=finished_zip_path)
 
             #Deletando video processado
