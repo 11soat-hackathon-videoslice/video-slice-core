@@ -188,27 +188,28 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Atualizar release existente
+      - name: Deletar e recriar release existente
         if: steps.check_release.outputs.release_exists == 'true'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           
-          echo "♻️ Atualizando release v${VERSION}..."
+          echo "🗑️ Deletando release v${VERSION}..."
+          gh release delete "v${VERSION}" --yes
           
-          # Remover assets antigos
-          gh release view "v${VERSION}" --json assets --jq '.assets[].name' | while read asset; do
-            echo "🗑️ Removendo asset antigo: $asset"
-            gh release delete-asset "v${VERSION}" "$asset" --yes
-          done
+          echo "✅ Release v${VERSION} deletada com sucesso"
           
-          # Gerar changelog atualizado
+          echo "🆕 Recriando release v${VERSION}..."
+          
+          # Gerar changelog
+          echo "📝 Gerando changelog..."
           CHANGELOG=$(git log --pretty=format:"- %s (%h)" -n 20)
           
-          # Atualizar release
-          gh release edit "v${VERSION}" \
-            --notes "## 🚀 Release v${VERSION} (Atualizada)
+          # Criar release nova
+          gh release create "v${VERSION}" \
+            --title "video-slice-core v${VERSION}" \
+            --notes "## 🚀 Release v${VERSION}
 
-          ### 📋 Mudanças Recentes
+          ### 📋 Mudanças
           $CHANGELOG
 
           ### 📦 Instalação
@@ -220,14 +221,10 @@ jobs:
           - ✅ Testes: Passando
           - 📈 Cobertura: >= 80%
           - ✅ Quality Gate: Aprovado
-
-          **Última atualização:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          "
+          " \
+            dist/*
           
-          # Fazer upload dos novos assets
-          gh release upload "v${VERSION}" dist/* --clobber
-          
-          echo "✅ Release v${VERSION} atualizada com sucesso!"
+          echo "✅ Release v${VERSION} recriada com sucesso!"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
