@@ -130,7 +130,7 @@ def get_frame_new_size(frame, target_frame_min_size: int) -> tuple[int, int, int
         return target_frame_min_size, int(original_height * ratio), original_min_size
 
 
-def metadata_update_status(vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, log: LogEntry) -> VdscMetadata:
+def metadata_set_status(vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum, log: LogEntry) -> VdscMetadata:
     """Atualiza status e adiciona log aos metadados"""
     vdsc_metadata.status = new_status.value
     vdsc_metadata.logs.append(log)
@@ -211,7 +211,7 @@ def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_met
 
 def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum):
     message = f" {vdsc_metadata.video_id} - Processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension} falhou após {vdsc_metadata.max_retries} tentativas: {str(ex)}."
-    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {vdsc_metadata.max_retries} tentativas."))
+    vdsc_metadata = metadata_set_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {vdsc_metadata.max_retries} tentativas."))
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.FAILED))
     return vdsc_metadata, message
 
@@ -220,7 +220,7 @@ def set_exception_status_retrying(gateway: SliceGatewayInferface, ex: Exception,
     vdsc_metadata.retries += 1
     schedule_timestamp = get_event_schedule_timestamp(vdsc_metadata, retry_backoff_factor = config.vdsc.schedule_event_rules.retry_backoff_factor)
     message = f"{vdsc_metadata.video_id} - Falha no processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension}. Tentativa {vdsc_metadata.retries} de {vdsc_metadata.max_retries} agendada para {_print_schedule_brasil(schedule_timestamp)}."
-    vdsc_metadata = metadata_update_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
+    vdsc_metadata = metadata_set_status(vdsc_metadata, new_status, LogEntry(f"{message}{str(ex)}"))
     gateway.send_schedule_retry_event(vdsc_metadata, schedule_timestamp, config.vdsc.schedule_event_rules.to_dict())
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.RETRYING))
     return vdsc_metadata, message
