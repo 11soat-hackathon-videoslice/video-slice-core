@@ -18,7 +18,7 @@ from core.utils.slice_process_util import (
     get_recurrent_interval_times,
     get_specific_interval_times,
     get_frame_new_size,
-    metadata_update_status,
+    metadata_set_status,
     set_exception_status,
     create_notification,
     create_email_notification,
@@ -165,7 +165,7 @@ class TestSliceProcessUtil:
         metadata = VdscMetadata(dto=valid_event_dto)
         log = LogEntry("Teste de log")
 
-        result = metadata_update_status(metadata, VdscStatusEnum.PROCESSING, log)
+        result = metadata_set_status(metadata, VdscStatusEnum.PROCESSING, log)
 
         assert result.status == VdscStatusEnum.PROCESSING.value
         assert len(result.logs) == 1
@@ -418,7 +418,7 @@ class TestSliceProcessUtil:
         original_status = metadata.status
 
         log = LogEntry("Status alterado para PROCESSING")
-        result = metadata_update_status(metadata, VdscStatusEnum.PROCESSING, log)
+        result = metadata_set_status(metadata, VdscStatusEnum.PROCESSING, log)
 
         assert result.status == VdscStatusEnum.PROCESSING.value
         assert result.status != original_status
@@ -430,7 +430,7 @@ class TestSliceProcessUtil:
         initial_logs = len(metadata.logs)
 
         log = LogEntry("Test log message")
-        result = metadata_update_status(metadata, VdscStatusEnum.FINISHED, log)
+        result = metadata_set_status(metadata, VdscStatusEnum.FINISHED, log)
 
         assert len(result.logs) == initial_logs + 1
         assert result.logs[-1].info == "Test log message"
@@ -508,7 +508,7 @@ class TestSliceProcessUtil:
         original_file_name = metadata.file_name
 
         log = LogEntry("Nova tentativa")
-        result = metadata_update_status(metadata, VdscStatusEnum.RETRYING, log)
+        result = metadata_set_status(metadata, VdscStatusEnum.RETRYING, log)
 
         assert result.video_id == original_video_id
         assert result.file_name == original_file_name
