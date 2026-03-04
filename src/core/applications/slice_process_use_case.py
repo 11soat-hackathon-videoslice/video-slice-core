@@ -41,11 +41,11 @@ class SliceProcessUseCase:
             if vdsc_metadata.status.upper() == VdscStatusEnum.UPLOADED.value.upper():
                 log_message=f"{video_id} - Iniciando processamento do vídeo {video_name}"
                 vdsc_metadata = metadata_set_status(vdsc_metadata, VdscStatusEnum.PROCESSING, LogEntry(log_message))
-                email_template_enum = EmailTemplateEnum.PROCESSING
             elif vdsc_metadata.status.upper() == VdscStatusEnum.RETRYING.value.upper():
                 vdsc_metadata.retries = retries
                 log_message = f"{video_id} - Reiniciando processamento do vídeo: {video_name}. Tentativa {retries} de {max_retries}."
-                email_template_enum = EmailTemplateEnum.PROCESSING
+
+            email_template_enum = EmailTemplateEnum.PROCESSING
             vdsc_metadata = metadata_set_status(vdsc_metadata, VdscStatusEnum.PROCESSING, LogEntry(log_message))
             gateway.update_metadata(vdsc_metadata)
             gateway.send_notification(create_notification(vdsc_metadata,['web','email'], log_message, email_template_enum))
