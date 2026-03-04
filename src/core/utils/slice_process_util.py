@@ -212,6 +212,8 @@ def set_exception_status(gateway: SliceGatewayInferface, ex: Exception, vdsc_met
 def set_exception_status_failed(gateway: SliceGatewayInferface, ex: Exception, vdsc_metadata: VdscMetadata, new_status: VdscStatusEnum):
     message = f" {vdsc_metadata.video_id} - Processamento do video {vdsc_metadata.file_name}.{vdsc_metadata.file_extension} falhou após {vdsc_metadata.max_retries} tentativas: {str(ex)}."
     vdsc_metadata = metadata_set_status(vdsc_metadata, new_status, LogEntry(f"Processamento falhou após {vdsc_metadata.max_retries} tentativas."))
+    gateway.delete_file(get_path_file(prefix_path=gateway.config.vdsc.dir_uploads, file_name=vdsc_metadata.video_id, file_extension=vdsc_metadata.file_extension))
+    gateway.delete_temp_files(get_path_directory(prefix_path=gateway.config.vdsc.dir_tmp, video_id=vdsc_metadata.video_id))
     gateway.send_notification(create_notification(vdsc_metadata, ['web','email'], message, EmailTemplateEnum.FAILED))
     return vdsc_metadata, message
 
