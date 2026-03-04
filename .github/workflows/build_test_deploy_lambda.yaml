@@ -17,6 +17,7 @@ on:
       - 'pyproject.toml'
 
   pull_request:
+    types: [closed]
     branches:
       - master
     paths:
